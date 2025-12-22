@@ -20,11 +20,7 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
 class Munc13:
-<<<<<<< HEAD
     def __init__(self, parameter_ranges, params, mode=0, t_max=50000, experiment_dt=0.5):
-=======
-    def __init__(self, parameter_ranges, params, mode=0, t_max_pre=50000, t_max=30.0, experiment_dt=0.5):
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         """
         A model class for simulating Munc13 dynamics (pre- and post-stimulation).
         
@@ -36,7 +32,6 @@ class Munc13:
         self.params_to_optimize = params
         self.parameter_ranges = parameter_ranges
         self.t_max = t_max
-<<<<<<< HEAD
         #self.t_max_pre = t_max_pre
         self.h = 0.01  # 3D to 2D length scale in um
         
@@ -80,22 +75,6 @@ class Munc13:
         self.DtX = 0.001 #um2/s
         self.DtD = 0.025 #um2/s twice as slow as DM.
         self.DtQ = 0.08 #um2/s
-=======
-        self.t_max_pre = t_max_pre
-        self.h = 0.01  # 3D to 2D length scale in um
-        VAratio = 1.9  # conversion factor
-        self.Atotal = 1 / 1.176        # (1/cluster density) area per cluster in um^2, pre-stim (determined by experimental cluster density)
-        self.Acluster = 0.01862     # cluster area, pre-stim
-        self.V = self.Atotal * VAratio
-        self.gamma = self.V / (self.Atotal * self.h)
-
-        self.AtotalDense = 1 / 1.675   # (1/cluster density) area per cluster in um^2, post-stim (determined by experimental cluster density)
-        self.AclusterDense = 0.02087 # cluster area, post-stim
-        self.VDense = self.AtotalDense * VAratio
-        self.gammaDense = self.VDense / (self.AtotalDense * self.h)
-
-        self.densIncrease = 3
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
 
         # diffusion constants
         self.D_exp_pre = 0.04255
@@ -146,15 +125,9 @@ class Munc13:
         targetIncrease = 15.1
         targetIncreasePost = 11.4
         n_time_points = int(self.t_max / experiment_dt)
-<<<<<<< HEAD
         #n_time_points_pre = int(self.t_max_pre / experiment_dt)
         self.timePoints = [i * experiment_dt for i in range(n_time_points + 1)]
        # self.timePointsPre = [i * experiment_dt for i in range(n_time_points_pre + 1)]
-=======
-        n_time_points_pre = int(self.t_max_pre / experiment_dt)
-        self.timePoints = [i * experiment_dt for i in range(n_time_points + 1)]
-        self.timePointsPre = [i * experiment_dt for i in range(n_time_points_pre + 1)]
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
 
         # Load experimental data
         self.expdata = pd.read_table(
@@ -170,23 +143,15 @@ class Munc13:
         self.delIntensityPost = (self.expdata.expInt[N - 1] - targetIncreasePost * self.expdata.expInt[0]) / (1.0 - targetIncreasePost)
 
         self.mode = mode
-<<<<<<< HEAD
         self.modes = [self.fitness_function_to_call]
 
         # Minimum threshold for a "viable" solution
         self.threshold = -50
-=======
-        self.modes = [self.eval_both]
-
-        # Minimum threshold for a "viable" solution
-        self.threshold = -500
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
 
 
     # -----------------------------
     #     ODE system definitions
     # -----------------------------
-<<<<<<< HEAD
     
        
 
@@ -208,39 +173,10 @@ class Munc13:
 
 
         
-=======
-    def dimerOde(self, t, y, params):
-        """
-        ODE for pre-equilibration without cluster.
-        y = [ S, R, M, D ]
-        """
-        # y[0] = S
-        # y[1] = R
-        # y[2] = M
-        # y[3] = D
-        kfsr = params[0]
-        krsr = params[1]
-        gamma = params[2]
-        kfmm = params[3]
-        krmm = params[4]
-        dylist = []
-        dylist.append(-kfsr*y[0]*y[1]+krsr*y[2])
-        dylist.append(-kfsr*y[0]*y[1]+krsr*y[2])
-        dylist.append(+kfsr*y[0]*y[1]-krsr*y[2]-gamma*kfmm*y[2]*y[2]+krmm*y[3]-gamma*kfmm*y[2]*y[2]+krmm*y[3])
-        dylist.append(+gamma*kfmm*y[2]*y[2]-krmm*y[3])
-        return np.array(dylist)
-
-
-    def munc13Ode(self, t, y, params):
-        """
-        Munc13 ODE model.
-
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         y[0]  = S, Munc13 in solution
         y[1]  = R, General recruiter on the membrane
         y[2]  = M, Munc13 on the membrane (out of the cluster)
         y[3]  = D, Munc13 dimer on the membrane (out of the cluster)
-<<<<<<< HEAD
         y[4]  = X, Cluster nucleator, also in 2D but dilute (well-mixed)
         y[5]  = S2, dimer in solution
         y[6]  = MX, Munc13 on the membrane + X 
@@ -753,292 +689,19 @@ class Munc13:
 
         print(f"Recruitment upon stimulation, sim value {recruitStim}, exp value {observedStim}, chi: Chi {-sum_diff}")
         return [-sum_diff]
-=======
-        y[4]  = X, Recruiter in the cluster
-        y[5]  = W, Munc13 in the cluster recruited from 3D
-        y[6]  = Y, Recruiter in the cluster converted from X
-        y[7]  = C, Munc13 in the cluster recruited from 2D
-        y[8]  = Z, Recruiter in the cluster converted from Y
-
-        Reaction equations:
-            S + R <-> M, kfsr, krsr
-            M + M <-> D, gamma*kfmm, krmm
-            S + X -> W + Y, kfc
-            M + X -> C + Y, gamma*kfc
-            D + X -> C + C + Y + Y - X, 2*gamma*kfc
-            S + Y -> W + Z, kfc
-            M + Y -> C + Z, gamma*kfc
-            D + Y -> C + C + Z + Z - Y, 2*gamma*kfc
-            S + Z -> W, kfc
-            M + Z -> C, gamma*kfc
-            D + Z -> C + C - Z, 2*gamma*kfc
-        """
-        kfsr = params[0]
-        krsr = params[1]
-        gamma = params[2]
-        kfmm = params[3]
-        krmm = params[4]
-        kfc = params[5]
-        dylist = []
-        dylist.append(-kfsr*y[0]*y[1]+krsr*y[2]-kfc*y[0]*y[4]-kfc*y[0]*y[6]-kfc*y[0]*y[8])
-        dylist.append(-kfsr*y[0]*y[1]+krsr*y[2])
-        dylist.append(+kfsr*y[0]*y[1]-krsr*y[2]-gamma*kfmm*y[2]*y[2]+krmm*y[3]-gamma*kfmm*y[2]*y[2]+krmm*y[3]-gamma*kfc*y[2]*y[4]-gamma*kfc*y[2]*y[6]-gamma*kfc*y[2]*y[8])
-        dylist.append(+gamma*kfmm*y[2]*y[2]-krmm*y[3]-2*gamma*kfc*y[3]*y[4]-2*gamma*kfc*y[3]*y[6]-2*gamma*kfc*y[3]*y[8])
-        dylist.append(-kfc*y[0]*y[4]-gamma*kfc*y[2]*y[4]-2*gamma*kfc*y[3]*y[4]-2*gamma*kfc*1*y[3]*y[4])
-        dylist.append(+kfc*y[0]*y[4]+kfc*y[0]*y[6]+kfc*y[0]*y[8])
-        dylist.append(+kfc*y[0]*y[4]+gamma*kfc*y[2]*y[4]+2*gamma*kfc*y[3]*y[4]+2*gamma*kfc*y[3]*y[4]-kfc*y[0]*y[6]-gamma*kfc*y[2]*y[6]-2*gamma*kfc*y[3]*y[6]-2*gamma*kfc*1*y[3]*y[6])
-        dylist.append(+gamma*kfc*y[2]*y[4]+2*gamma*kfc*y[3]*y[4]+2*gamma*kfc*y[3]*y[4]+gamma*kfc*y[2]*y[6]+2*gamma*kfc*y[3]*y[6]+2*gamma*kfc*y[3]*y[6]+gamma*kfc*y[2]*y[8]+2*gamma*kfc*y[3]*y[8]+2*gamma*kfc*y[3]*y[8])
-        dylist.append(+kfc*y[0]*y[6]+gamma*kfc*y[2]*y[6]+2*gamma*kfc*y[3]*y[6]+2*gamma*kfc*y[3]*y[6]-kfc*y[0]*y[8]-gamma*kfc*y[2]*y[8]-2*gamma*kfc*y[3]*y[8]-2*gamma*kfc*1*y[3]*y[8])
-        return np.array(dylist)
-
-
-    # ------------------------------------------------------
-    #        Utilities to compute Munc13 on cluster/membrane
-    # ------------------------------------------------------
-    def calculate_munc13(self, copies):
-        """
-        Munc13 in cluster (copies/um^2) = C/Acluster
-        Munc13 on the membrane but not in cluster (copies/um^2) = (M + 2*D)/Atotal
-        """
-        mc3D = copies[5] / self.Acluster
-        mc2D = copies[7] / self.Acluster
-        md = (copies[2] + 2 * copies[3]) / self.Atotal
-        return mc3D, mc2D, md
-
-
-    def calculate_munc13_post(self, copies):
-        """
-        Same idea but for post-stimulation geometry (AclusterDense, AtotalDense).
-        """
-        mc3D = copies[5] / self.AclusterDense
-        mc2D = copies[7] / self.AclusterDense
-        md = (copies[2] + 2 * copies[3]) / self.AtotalDense
-        return mc3D, mc2D, md
-
-
-    def get_cluster_time_series(self, Y, post=False):
-        """
-        Return Munc13 copy number in cluster over time, per um^2.
-        Y: ODE solution
-        """
-        copies = Y * (self.VDense if post else self.V) * 602
-        mc = (copies[5] + copies[7]) / (self.AclusterDense if post else self.Acluster)
-        md = (copies[2] + 2 * copies[3]) / (self.AtotalDense if post else self.Atotal)
-        return mc, md
-
-
-    def get_simulated_fold_change(self, mc, md):
-        """
-        Returns fold increase in cluster copy number
-        """
-        c0 = mc[0] + md[0]
-        cf = mc[-1] + md[-1]
-        return cf / c0
-
-
-    def compute_background_from_target_increase(self, target_increase):
-        """
-        Compute background (delta) such that:
-            (I_final - delta) / (I_0 - delta) = target_increase
-        """
-        I0 = self.expdata.expInt.iloc[0]
-        If = self.expdata.expInt.iloc[-1]
-        delta = (If - target_increase * I0) / (1.0 - target_increase)
-        return delta
-
-
-    # --------------------------------------------
-    #          Cost (Chi) and viability checks
-    # --------------------------------------------
-    def costChi_pre(self, Y):
-        """
-        Compute a chi-square-like cost for the "pre" data.
-        """
-        mc, md = self.get_cluster_time_series(Y, False)
-        fold_increase = self.get_simulated_fold_change(mc, md)
-        delta = self.compute_background_from_target_increase(fold_increase)
-
-        relInt = (self.expdata.expInt - delta) / (self.expdata.expInt[0] - delta)
-        sem = self.expdata.expSEM / (self.expdata.expInt[0] - delta)
-
-        copies = Y * self.V * 602
-        mc3D, mc2D, md = self.calculate_munc13(copies)
-        mc = mc3D + mc2D
-        intensRatio = mc + md
-        intensRatio /= md[0] if md[0] != 0 else 1.0
-
-        nPt = len(relInt)
-        nPsol = len(mc)
-
-        if nPsol < nPt:
-            # Not enough solution points -> penalty
-            return [2 * self.threshold]
-
-        # Sum of (data-model)^2 / sem^2
-        ssum = 0
-        for i in range(nPt):
-            if sem[i] == 0:
-                continue
-            df = relInt[i] - intensRatio[i]
-            ssum += df * df / (sem[i] * sem[i])
-
-        y = 10 * ((intensRatio[-1] - intensRatio[int(nPt / 3 * 2)]))**2
-        ssum += y
-
-        c = mc[-1] * self.Acluster
-        z = 0 * ((c - 30)/30.0)**2
-        ssum += z
-
-        return [-ssum]
-
-
-    def costChi_post(self, Y):
-        """
-        Compute a chi-square-like cost for the "post" data.
-        """
-        mc, md = self.get_cluster_time_series(Y, True)
-        fold_increase = self.get_simulated_fold_change(mc, md)
-        delta = self.compute_background_from_target_increase(fold_increase)
-
-        relInt = (self.expdata.expInt - delta) / (self.expdata.expInt[0] - delta)
-        sem = self.expdata.expSEM / (self.expdata.expInt[0] - delta)
-
-        copies = Y * self.VDense * 602
-        mc3D, mc2D, md = self.calculate_munc13_post(copies)
-        mc = mc3D + mc2D
-        intensRatio = mc + md
-        intensRatio /= md[0] if md[0] != 0 else 1.0
-
-        nPt = len(relInt)
-        nPsol = len(mc)
-        if nPsol < nPt:
-            return [2 * self.threshold]
-
-        ssum = 0
-        for i in range(nPt):
-            if sem[i] == 0:
-                continue
-            df = relInt[i] - intensRatio[i]
-            ssum += df * df / (sem[i] * sem[i])
-
-        y = 10 * ((intensRatio[-1] - intensRatio[int(nPt / 3 * 2)]))**2
-        ssum += y
-
-        c = mc[-1] * self.AclusterDense
-        z = 0 * ((c - 33)/33.0)**2
-        ssum += z
-
-        return [-ssum]
-
-
-    def costChiDiffusion(self, Dpre, Dpost):
-        """
-        Compute a chi-square-like cost for the diffusion constants.
-        """
-        D_exp_pre = self.D_exp_pre # this the experimental measured diffusion constant for NO STIM (also named pre stim)
-        D_exp_post = self.D_exp_post # experimental diffusion constant for STIM (post stim)
-        ratio_pre_post = D_exp_pre / D_exp_post
-
-        # Calculate differences
-        diff_pre = (Dpre - D_exp_pre) ** 2
-        diff_post = (Dpost - D_exp_post) ** 2
-        ratio_diff = (Dpre / Dpost - ratio_pre_post) ** 2
-
-        # Weight prefactors to normalize the terms
-        # Normalize by the square of expected values to make terms dimensionless and comparable
-        weight_pre = 50.0 / (D_exp_pre ** 2)
-        weight_post = 50.0 / (D_exp_post ** 2)
-        weight_ratio = 50.0 / (ratio_pre_post ** 2)
-
-        sum_diff = weight_pre * diff_pre + weight_post * diff_post + weight_ratio * ratio_diff
-        return [-sum_diff]
-    
-    
-    def costChiDiffusionDC2A(self, Dpre, Dpost):
-        """
-        Compute a chi-square-like cost for the diffusion constants.
-        """
-        D_exp_pre = self.D_exp_DC2A_pre
-        D_exp_post = self.D_exp_DC2A_post
-        ratio_pre_post = D_exp_pre / D_exp_post
-
-        # Calculate differences
-        diff_pre = (Dpre - D_exp_pre) ** 2
-        diff_post = (Dpost - D_exp_post) ** 2
-        ratio_diff = (Dpre / Dpost - ratio_pre_post) ** 2
-
-        # Weight prefactors to normalize the terms
-        # Normalize by the square of expected values to make terms dimensionless and comparable
-        weight_pre = 50.0 / (D_exp_pre ** 2)
-        weight_post = 50.0 / (D_exp_post ** 2)
-        weight_ratio = 50.0 / (ratio_pre_post ** 2)
-
-        sum_diff = weight_pre * diff_pre + weight_post * diff_post + weight_ratio * ratio_diff
-        return [-sum_diff]
-    
-    def costChiDiffusionDC2B(self, Dpre, Dpost):
-        """
-        Compute a chi-square-like cost for the diffusion constants.
-        """
-        D_exp_pre = self.D_exp_DC2B_pre
-        D_exp_post = self.D_exp_DC2B_post
-        ratio_pre_post = D_exp_pre / D_exp_post
-
-        # Calculate differences
-        diff_pre = (Dpre - D_exp_pre) ** 2
-        diff_post = (Dpost - D_exp_post) ** 2
-        ratio_diff = (Dpre / Dpost - ratio_pre_post) ** 2
-
-        # Weight prefactors to normalize the terms
-        # Normalize by the square of expected values to make terms dimensionless and comparable
-        weight_pre = 50.0 / (D_exp_pre ** 2)
-        weight_post = 50.0 / (D_exp_post ** 2)
-        weight_ratio = 50.0 / (ratio_pre_post ** 2)
-
-        sum_diff = weight_pre * diff_pre + weight_post * diff_post + weight_ratio * ratio_diff
-        return [-sum_diff]
-    
-    def costChiDiffusionshRIM(self, Dpre, Dpost):
-        """
-        Compute a chi-square-like cost for the diffusion constants.
-        """
-        D_exp_pre = self.D_exp_shRIM_pre
-        D_exp_post = self.D_exp_shRIM_post
-        ratio_pre_post = D_exp_pre / D_exp_post
-
-        # Calculate differences
-        diff_pre = (Dpre - D_exp_pre) ** 2
-        diff_post = (Dpost - D_exp_post) ** 2
-        ratio_diff = (Dpre / Dpost - ratio_pre_post) ** 2
-
-        # Weight prefactors to normalize the terms
-        # Normalize by the square of expected values to make terms dimensionless and comparable
-        weight_pre = 50.0 / (D_exp_pre ** 2)
-        weight_post = 50.0 / (D_exp_post ** 2)
-        weight_ratio = 50.0 / (ratio_pre_post ** 2)
-
-        sum_diff = weight_pre * diff_pre + weight_post * diff_post + weight_ratio * ratio_diff
-        return [-sum_diff]
-
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
 
     def isViableFitness(self, fit):
         return fit >= self.threshold
 
 
     def isViable(self, point):
-<<<<<<< HEAD
         fitness = self.fitness_function_to_call(point)
-=======
-        fitness = self.eval_both(point)
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         return self.isViableFitness(fitness[0])
 
 
     # ---------------------------------------------------
     #   Main evaluation: combine pre and post conditions
     # ---------------------------------------------------
-<<<<<<< HEAD
   
     def fitness_function_to_call(self, candidate):
         #use this more general function so you can change the evaluation function
@@ -1405,84 +1068,11 @@ class Munc13:
 
         return [chiTotal]
     
-=======
-    def eval_both(self, candidate):
-        """
-        Evaluate the candidate solution on both pre- and post-stim conditions.
-        """
-        solutionPre, solutionPost, _, _, Dpre, Dpost = self.simulate(candidate)
-
-        # Chi from pre
-        chiPre = self.costChi_pre(solutionPre)
-        # Chi from post
-        chiPost = self.costChi_post(solutionPost)
-
-        chiTotal = chiPre[0] + chiPost[0]
-
-        # Additional penalty for matching the ~3x ratio of munc13 density on the membrane
-        copiesPre = solutionPre * self.V * 602
-        mcPre3D, mcPre2D, mrPre = self.calculate_munc13(copiesPre)
-        mcPre = mcPre3D + mcPre2D
-        membraneMuncPre = mcPre * self.Acluster + mrPre * self.Atotal
-        clusterMuncPre = mcPre * self.Acluster + mrPre * self.Acluster
-        ratioClusterPre = np.mean(clusterMuncPre / membraneMuncPre)
-        densityPre = membraneMuncPre / self.Atotal
-
-        copiesPost = solutionPost * self.VDense * 602
-        mcPost3D, mcPost2D, mrPost = self.calculate_munc13_post(copiesPost)
-        mcPost = mcPost3D + mcPost2D
-        membraneMuncPost = mcPost * self.AclusterDense + mrPost * self.AtotalDense
-        clusterMuncPost = mcPost * self.AclusterDense + mrPost * self.AclusterDense
-        ratioClusterPost = np.mean(clusterMuncPost / membraneMuncPost)
-        densityPost = membraneMuncPost / self.AtotalDense
-
-        ratio = densityPost / densityPre
-        mean_ratio = np.mean(ratio)
-        costRatio = -((mean_ratio - self.densIncrease)/self.densIncrease) ** 2
-        fracRatio = -((ratioClusterPre - 0.4)/0.4) ** 2 - ((ratioClusterPost - 0.4)/0.4) ** 2
-
-        chiTotal += (150.0 * costRatio + 0.0 * fracRatio)
-
-        # diffusion constants chi
-        chiDiffusion = 250*self.costChiDiffusion(Dpre, Dpost)
-
-        chiTotal += chiDiffusion[0]
-        
-        # diffusion constants of mutant chi
-        candidate_dc2a = list(candidate)
-        candidate_dc2a[3] = 0
-        _, _, _, _, DpreDC2A, DpostDC2A = self.simulate(candidate_dc2a)
-        
-        chiDiffusionDC2A = 250*self.costChiDiffusionDC2A(DpreDC2A, DpostDC2A)
-        
-        chiTotal += chiDiffusionDC2A[0]
-        
-        candidate_shRIM = list(candidate)
-        candidate_shRIM[3] *= 2
-        _, _, _, _, DpreshRIM, DpostshRIM = self.simulate(candidate_shRIM)
-        
-        chiDiffusionshRIM = 250*self.costChiDiffusionshRIM(DpreshRIM, DpostshRIM)
-        
-        chiTotal += chiDiffusionshRIM[0]
-        
-        candidate_dc2b = list(candidate)
-        candidate_dc2b[0] *= 0.5
-        _, _, _, _, DpreDC2B, DpostDC2B = self.simulate(candidate_dc2b)
-        
-        chiDiffusionDC2B = 250*self.costChiDiffusionDC2B(DpreDC2B, DpostDC2B)
-        
-        chiTotal += chiDiffusionDC2B[0]
-
-        return [chiTotal]
-
-
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
     # -----------------------------------------
     #      ODE simulation (pre/post)
     # -----------------------------------------
     def simulate_pre(self, candidate):
         """
-<<<<<<< HEAD
    
         The candidate contains the sampled parameters.
         Their order is defined in the array "params_to_optimize"
@@ -1596,78 +1186,12 @@ class Munc13:
         return solution.y
     
     
-=======
-        1) Pre-equilibration with a simpler ODE (dimerOde)
-        2) Then feed final state into the full munc13Ode
-        """
-        kfsr=candidate[0] #form SR
-        krsr=candidate[1] #dissociate SR
-        kfmm=candidate[3] #form D
-        krmm=candidate[4] #dissociate D
-        kfc=candidate[5] #form C
-        S0=candidate[7] #initial Solution Munc13 (S), uM
-        R0=candidate[8] #initial R, /um^2
-        D1=candidate[9] #Monomer (M) diffusion constant on membrane, um^2/s
-        D2=candidate[9] / candidate[10] #Dimer (D) diffusion constant on membrane, um^2/s
-        X0 = candidate[11] / self.Acluster
-        # convert to uM
-        R0 = R0*self.Atotal/self.V/602.0 
-        X0 = X0*self.Acluster/self.V/602.0
-
-        rateParams=np.array([kfsr, krsr, self.gamma, kfmm, krmm])
-        initValues=np.array([S0,R0,0,0])
-        solution_pre = scipy.integrate.solve_ivp(fun=self.dimerOde, method='BDF', t_span=(0, self.t_max_pre), y0=initValues, t_eval=self.timePointsPre, args=(rateParams,), rtol=1e-7, atol=1e-9)
-        solution = solution_pre.y
-        solution = solution[:, -1]
-
-        rateParams = np.array([kfsr,krsr,self.gamma,kfmm,krmm,kfc])
-        initValues = np.array([solution[0],solution[1],solution[2],solution[3],X0,0,0,0,0])
-        solution = scipy.integrate.solve_ivp(fun=self.munc13Ode, method='BDF', t_span=(0, self.t_max), y0=initValues, t_eval=self.timePoints, args=(rateParams,), rtol=1e-7, atol=1e-9)
-
-        D = self.calc_diffusion(D1, D2, solution.y)
-
-        return solution.y, solution_pre.y, D
-
-
-    def simulate_post(self, candidate):
-        """
-        Same idea but uses post-stim geometry and possibly different parameters.
-        """
-        kfsr=candidate[0] #form SR
-        krsr=candidate[2] #dissociate SR
-        kfmm=candidate[3] #form D
-        krmm=candidate[4] #dissociate D
-        kfc=candidate[6] #form C
-        S0=candidate[7] #initial Solution Munc13 (S), uM
-        R0=candidate[8] #initial R, /um^2
-        D1=candidate[9] #Monomer (M) diffusion constant on membrane, um^2/s
-        D2=candidate[9] / candidate[10] #Dimer (D) diffusion constant on membrane, um^2/s
-        X0 = candidate[11] / self.Acluster
-        # convert to uM
-        R0 = R0*self.AtotalDense/self.VDense/602.0 
-        X0 = X0*self.AclusterDense/self.VDense/602.0
-
-        rateParams=np.array([kfsr, krsr, self.gamma, kfmm, krmm])
-        initValues=np.array([S0,R0,0,0])
-        solution_pre = scipy.integrate.solve_ivp(fun=self.dimerOde, method='BDF', t_span=(0, self.t_max_pre), y0=initValues, t_eval=self.timePointsPre, args=(rateParams,), rtol=1e-7, atol=1e-9)
-        solution = solution_pre.y
-        solution = solution[:, -1]
-
-        rateParams = np.array([kfsr,krsr,self.gamma,kfmm,krmm,kfc])
-        initValues = np.array([solution[0],solution[1],solution[2],solution[3],X0,0,0,0,0])
-        solution = scipy.integrate.solve_ivp(fun=self.munc13Ode, method='BDF', t_span=(0, self.t_max), y0=initValues, t_eval=self.timePoints, args=(rateParams,), rtol=1e-7, atol=1e-9)
-
-        D = self.calc_diffusion(D1, D2, solution.y)
-
-        return solution.y, solution_pre.y, D
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
 
 
     def simulate(self, candidate):
         """
         Wrapper to run both pre- and post-stimulation solvers.
         """
-<<<<<<< HEAD
         solutionPre = self.simulate_pre(candidate)
         solutionPost = self.simulate_post(candidate, solutionPre)
         return [solutionPre, solutionPost]
@@ -1707,111 +1231,6 @@ class Munc13:
 
     def plot_freespecies_time(self, Y, figsize=(4, 3), fontsize=12, dpi=300):
         """Plot the time course of the cluster model solution"""
-=======
-        solutionPre, simulationPreEq, Dpre = self.simulate_pre(candidate)
-        solutionPost, simulationPostEq, Dpost = self.simulate_post(candidate)
-        return [solutionPre, solutionPost, simulationPreEq, simulationPostEq, Dpre, Dpost]
-
-
-    def calc_diffusion(self, D1, D2, solution):
-        """Calculate the average of Munc13 on membrane diffusion constants"""
-        D_average = (solution[2] * D1 + 2*solution[3] * D2) / (solution[2] + 2*solution[3] + solution[5] + solution[7])
-
-        return D_average[-1]
-
-
-    def calculate_results(self, solution):
-        solutionPre, solutionPost, solutionPreEq, solutionPostEq,_,_ = self.simulate(solution)
-        copies = solutionPre * self.V * 602
-        mc3D, mc2D, mr = self.calculate_munc13(copies)
-        intensRatio = np.divide((mc3D+mc2D) + mr, mr[0])
-        pre = (mc3D+mc2D) * self.Acluster + mr * self.Atotal
-        preCluster = (mc3D+mc2D) * self.Acluster + mr * self.Acluster
-        preCluster3D = mc3D * self.Acluster
-        preCluster2D = mc2D * self.Acluster
-        preClusterR = mr * self.Acluster
-        copiesPost = solutionPost * self.VDense * 602
-        mcPost3D, mcPost2D, mrPost = self.calculate_munc13_post(copiesPost)
-        intensRatioPost = np.divide((mcPost3D+mcPost2D) + mrPost, mrPost[0])
-        post = (mcPost3D+mcPost2D) * self.AclusterDense + mrPost * self.AtotalDense
-        postCluster = (mcPost3D+mcPost2D) * self.AclusterDense + mrPost * self.AclusterDense
-        postCluster3D = mcPost3D * self.AclusterDense
-        postCluster2D = mcPost2D * self.AclusterDense
-        postClusterR = mrPost * self.AclusterDense
-        
-        # pre eq simulation without cluster recruiter
-        copies = solutionPreEq * self.V * 602
-        preEq = copies[2] + 2 * copies[3]
-        
-        copies = solutionPostEq * self.VDense * 602
-        postEq = copies[2] + 2 * copies[3]
-
-        return intensRatio, intensRatioPost, preCluster, postCluster, pre, post, preEq, postEq, preCluster3D, preCluster2D, preClusterR, postCluster3D, postCluster2D, postClusterR
-
-
-    def calc_diffusion_dilute(self, D1, D2, solution):
-        """Calculate the average of Munc13 in dilute diffusion constants"""
-        D_average = (solution[2] * D1 + 2 * solution[3] * D2) / (solution[2] + 2 * solution[3])
-        percentages_M = (solution[2]) / (solution[2] + 2 * solution[3])
-        percentages_D = (2*solution[3]) / (solution[2] + 2 * solution[3])
-        # print(f"Percentages of Munc13 in M: {percentages_M[-1]}, in D: {percentages_D[-1]}")
-
-        return D_average[-1]
-
-
-    def calc_percentages_cluster(self, solution):
-        """Calcualte the percentage of Munc13 copies in cluster"""
-        P_average = (solution[5] + solution[7]) / (solution[2] + 2 * solution[3] + solution[5] + solution[7])
-
-        return P_average[-1]
-
-    def calc_populations(self, solution):
-        P_cluster = (solution[5] + solution[7]) / (solution[2] + 2 * solution[3] + solution[5] + solution[7])
-        P_monomer = (solution[2]) / (solution[2] + 2 * solution[3] + solution[5] + solution[7])
-        P_dimer = (2 * solution[3]) / (solution[2] + 2 * solution[3] + solution[5] + solution[7])
-
-        return P_monomer[-1], P_dimer[-1], P_cluster[-1]
-    
-    def calc_3D_2D_percentages_cluster(self, solution):
-        """Calcualte the percentage of Munc13 copies in cluster from 3D or 2D"""
-        P_3D_average = (solution[5]) / (solution[5] + solution[7])
-        P_2D_average = (solution[7]) / (solution[5] + solution[7])
-
-        return P_3D_average[-1], P_2D_average[-1]
-
-
-    def filter_and_store_solutions(self, best=100, totalTime=30.0, dt=0.1):
-        np.random.seed(42)
-        self.t_max = totalTime
-        n_time_points = int(totalTime / dt)
-        self.timePoints = [i * dt for i in range(n_time_points + 1)]
-    
-        df = pd.read_csv("../data/optimizedParms.txt", sep=",", engine="python")
-        df.columns = df.columns.str.strip()
-        df = df.sort_values(by="Rank")
-    
-        param_cols = [col for col in df.columns if col not in ["Rank", "Fitness"]]
-    
-        qualified = []
-        for _, row in df.iterrows():
-            param_vector = [float(row[col]) for col in param_cols]
-            intensRatio, intensRatioPost, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(param_vector)
-            tmp = np.mean(post/pre)
-            # print("Average munc13 on membrane, NOSTIM/STIM: ", tmp)
-            if True:#preCluster[-1] >= 30 and tmp > 1.5:
-                qualified.append(param_vector)
-                if len(qualified) == best:
-                    break
-                else:
-                    if len(qualified) % 10 == 0:
-                        # print(f"{len(qualified)} solutions found")
-                        pass
-    
-        self.filteredSolutions = qualified
-        self.bestSolution = qualified[0] if qualified else None
-
-    def plot_total_recruitment_wt(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         sns.set_style("ticks")
         sns.set_context("paper", rc={
             "font.size": fontsize,
@@ -1823,7 +1242,6 @@ class Munc13:
             "font.family": "serif"
         })
 
-<<<<<<< HEAD
         copies= Y * self.cellVolume * 602  # converts from uM to copy numbers.
         c_pre  = "black"   # NO STIM
         c_post = "red"     # STIM
@@ -1921,28 +1339,6 @@ class Munc13:
 
     def plot_mycluster_time(self, Y, figsize=(4, 3), fontsize=12, dpi=300):
         """Plot the time course of the cluster 1X model solution"""
-=======
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-        _, _, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(candidate)
-        c_pre  = "black"   # NO STIM
-        c_post = "red"     # STIM
-        fig, ax = plt.subplots(figsize=figsize)
-        ax.plot(self.timePoints, pre / self.Atotal, linestyle="-", label="NO STIM", color=c_pre, alpha=0.95, zorder=3)
-        ax.plot(self.timePoints, post / self.AtotalDense, linestyle="-", label="STIM", color=c_post, alpha=0.95, zorder=3)
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Unc13A density on membrane\n(copies/$\mu$m$^2$)")
-        ax.set_xlim(0, 10)
-        ax.set_ylim(0, 600)
-        ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_total_recruitment_wt.svg") 
-        fig.savefig("../fig/fig_total_recruitment_wt.png", dpi=dpi) 
-        plt.show()
-        
-    def plot_cluster_recruitment_wt(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         sns.set_style("ticks")
         sns.set_context("paper", rc={
             "font.size": fontsize,
@@ -1954,7 +1350,6 @@ class Munc13:
             "font.family": "serif"
         })
 
-<<<<<<< HEAD
         copies= Y * self.cellVolume * 602  # converts from uM to copy numbers.
         c_pre  = "black"   # NO STIM
         c_post = "red"     # STIM
@@ -1982,28 +1377,6 @@ class Munc13:
     
     def plot_each_cluster_time(self, Y, figsize=(5, 4), fontsize=12, dpi=300):
         """Plot the time course of the cluster 1X model solution"""
-=======
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-        _, _, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(candidate)
-        c_pre  = "black"   # NO STIM
-        c_post = "red"     # STIM
-        fig, ax = plt.subplots(figsize=figsize)
-        ax.plot(self.timePoints, preCluster, linestyle="-", label="NO STIM", color=c_pre, alpha=0.95, zorder=3)
-        ax.plot(self.timePoints, postCluster, linestyle="-", label="STIM", color=c_post, alpha=0.95, zorder=3)
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Unc13A copies in cluster")
-        ax.set_xlim(0, 10)
-        ax.set_ylim(0, 50)
-        ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_cluster_recruitment_wt.svg") 
-        fig.savefig("../fig/fig_cluster_recruitment_wt.png", dpi=dpi) 
-        plt.show()
-
-    def plot_diffusivity_wt(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         sns.set_style("ticks")
         sns.set_context("paper", rc={
             "font.size": fontsize,
@@ -2015,7 +1388,6 @@ class Munc13:
             "font.family": "serif"
         })
 
-<<<<<<< HEAD
         copies= Y * self.cellVolume * 602  # converts from uM to copy numbers.
         #plt.figure()
         fig, ax = plt.subplots(figsize=figsize)
@@ -2137,30 +1509,6 @@ class Munc13:
         mutants = ['WT']  #, r'$\Delta$C2A', 'shRNA RIM2', r'$\Delta$C2B']
 
         
-=======
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-        fig, ax = plt.subplots(figsize=figsize)
-
-        _, _, _, _, d_pre, d_post = self.simulate(candidate)
-        self.D_model_pre = d_pre
-        self.D_model_post = d_post
-
-        print("Experimental:", self.D_exp_pre, self.D_exp_post)
-        print("Model:", self.D_model_pre, self.D_model_post)
-
-        mutants = ['WT']  #, r'$\Delta$C2A', 'shRNA RIM2', r'$\Delta$C2B']
-
-        # Data
-        D_exp_pre   = [self.D_exp_pre,]  #   self.D_exp_DC2A_pre,   self.D_exp_shRIM_pre,   self.D_exp_DC2B_pre]
-        D_exp_post  = [self.D_exp_post,]  #  self.D_exp_DC2A_post,  self.D_exp_shRIM_post,  self.D_exp_DC2B_post]
-        D_model_pre  = [self.D_model_pre,]  #  self.D_model_DC2A_pre,  self.D_model_shRIM_pre,  self.D_model_DC2B_pre]
-        D_model_post = [self.D_model_post,]  # self.D_model_DC2A_post, self.D_model_shRIM_post, self.D_model_DC2B_post]
-
-        D_exp_pre_sem  = [self.D_exp_pre_sem, ]  #  self.D_exp_DC2A_pre_sem,  self.D_exp_shRIM_pre_sem,  self.D_exp_DC2B_pre_sem]
-        D_exp_post_sem = [self.D_exp_post_sem, ]  # self.D_exp_DC2A_post_sem, self.D_exp_shRIM_post_sem, self.D_exp_DC2B_post_sem]
-
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         n = len(mutants)
 
         # Layout: [Exp(NO), Exp(STIM)]   gap   [Model(NO), Model(STIM)]
@@ -2182,7 +1530,6 @@ class Munc13:
         hatch_model = '///'
 
         # EXP: solid fills (with error bars)
-<<<<<<< HEAD
         if whichExp=='C2A':
             densPre=self.density_c2a_pre
             densPost=self.density_c2a_post
@@ -2207,25 +1554,6 @@ class Munc13:
         ax.set_xticklabels([], fontsize=fontsize)
         ax.tick_params(axis='y', labelsize=fontsize * 0.8)
         ax.set_ylim(bottom=0, top=0.042)
-=======
-        ax.bar(x_exp_no,   D_exp_pre,  width=bar_width, yerr=D_exp_pre_sem,  capsize=4,
-            color=c_no,   edgecolor='black', label='Exp (NO STIM)')
-        ax.bar(x_exp_stim, D_exp_post, width=bar_width, yerr=D_exp_post_sem, capsize=4,
-            color=c_stim, edgecolor='black', label='Exp (STIM)')
-
-        # MODEL: hatched (use white fill + colored edge so the hatch stands out)
-        ax.bar(x_mod_no,   D_model_pre,  width=bar_width,
-            facecolor='white', edgecolor=c_no,   hatch=hatch_model, label='Model (NO STIM)')
-        ax.bar(x_mod_stim, D_model_post, width=bar_width,
-            facecolor='white', edgecolor=c_stim, hatch=hatch_model, label='Model (STIM)')
-
-        # Axes/labels
-        ax.set_ylabel(r"$\mathrm{Average\ Diffusion}\ (\mu\mathrm{m}^2/\mathrm{s})$", fontsize=fontsize)
-        ax.set_xticks(centers)
-        ax.set_xticklabels([], fontsize=fontsize)
-        ax.tick_params(axis='y', labelsize=fontsize * 0.8)
-        ax.set_ylim(bottom=0)
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
 
         # Adjust layout to fit
         plt.tight_layout(rect=[0, 0, 1, 0.95])
@@ -2233,7 +1561,6 @@ class Munc13:
         # Cleanup
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-<<<<<<< HEAD
         #ax.legend()
         fig.tight_layout()
 
@@ -2243,16 +1570,6 @@ class Munc13:
 
     def plot_lifetime_vs_exp(self, candidate, sol, solPost, fileStr, figsize=(2.5, 2), fontsize=9, dpi=300):
         
-=======
-        ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_diffusivity_wt.svg") 
-        fig.savefig("../fig/fig_diffusivity_wt.png", dpi=dpi) 
-        plt.show()
-
-    def plot_population_wt(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         sns.set_style("ticks")
         sns.set_context("paper", rc={
             "font.size": fontsize,
@@ -2264,7 +1581,6 @@ class Munc13:
             "font.family": "serif"
         })
 
-<<<<<<< HEAD
         #candidate = self.filteredSolutions[select]
         tau46, tau56 = self.calculate_lifetime_of_clusters(sol, candidate)
         tau46, tau56post = self.calculate_lifetime_of_clusters(solPost, candidate)
@@ -2274,161 +1590,6 @@ class Munc13:
 
         
         n = 1
-=======
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-
-        solutionPre, solutionPost, _, _, _, _ = self.simulate(candidate)
-        P_monomer_pre, P_dimer_pre, P_cluster_pre = self.calc_populations(solutionPre)
-        P_monomer_post, P_dimer_post, P_cluster_post = self.calc_populations(solutionPost)
-
-        print("Population NO STIM: Monomer: %.2f%%, Dimer: %.2f%%, Cluster: %.2f%%" % (P_monomer_pre*100, P_dimer_pre*100, P_cluster_pre*100))
-        print("Population STIM:    Monomer: %.2f%%, Dimer: %.2f%%, Cluster: %.2f%%" % (P_monomer_post*100, P_dimer_post*100, P_cluster_post*100))
-
-        # plot two pie charts side by side
-        fig, ax = plt.subplots(1, 2, figsize=figsize)
-
-        labels = ['M', 'D', 'C']
-        sizes_pre = [P_monomer_pre, P_dimer_pre, P_cluster_pre]
-        sizes_post = [P_monomer_post, P_dimer_post, P_cluster_post]
-        colors = ['#ff9999','#66b3ff','#99ff99']
-        explode = (0.05, 0.05, 0.05)  # explode all slices slightly
-        wedges1, texts1, autotexts1 = ax[0].pie(sizes_pre, explode=explode, labels=labels, colors=colors,
-                autopct='%1.1f%%', startangle=140, pctdistance=0.85, textprops={'fontsize': fontsize * 0.8})
-        wedges2, texts2, autotexts2 = ax[1].pie(sizes_post, explode=explode, labels=labels, colors=colors,
-                autopct='%1.1f%%', startangle=140, pctdistance=0.85, textprops={'fontsize': fontsize * 0.8})
-        # draw circle for donut shape
-        centre_circle0 = plt.Circle((0,0), 0.70, fc='white')
-        centre_circle1 = plt.Circle((0,0), 0.70, fc='white')
-        ax[0].add_artist(centre_circle0)
-        ax[1].add_artist(centre_circle1)
-        ax[0].set_title('NO STIM', fontsize=fontsize)
-        ax[1].set_title('STIM', fontsize=fontsize)
-        # Equal aspect ratio ensures that pie is drawn as a circle
-        ax[0].axis('equal')  
-        ax[1].axis('equal')
-        fig.tight_layout()
-        fig.savefig("../fig/fig_population_wt.svg") 
-        fig.savefig("../fig/fig_population_wt.png", dpi=dpi)
-        plt.show()
-
-    def plot_total_recruitment_dc2a(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-
-        c3 = candidate[3]
-        candidate[3] = 0  # Set kfmm to 0 for deltaC2A scenario
-        _, _, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(candidate)
-        candidate[3] = c3
-
-        c_pre  = "black"   # NO STIM
-        c_post = "red"     # STIM
-        fig, ax = plt.subplots(figsize=figsize)
-        ax.plot(self.timePoints, pre / self.Atotal, linestyle="-", label="NO STIM", color=c_pre, alpha=0.95, zorder=3)
-        ax.plot(self.timePoints, post / self.AtotalDense, linestyle="-", label="STIM", color=c_post, alpha=0.95, zorder=3)
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Unc13A density on membrane\n(copies/$\mu$m$^2$)")
-        ax.set_xlim(0, 10)
-        ax.set_ylim(0, 600)
-        ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_total_recruitment_dc2a.svg") 
-        fig.savefig("../fig/fig_total_recruitment_dc2a.png", dpi=dpi) 
-        plt.show()
-
-    def plot_cluster_recruitment_dc2a(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-        
-        c3 = candidate[3]
-        candidate[3] = 0  # Set kfmm to 0 for deltaC2A scenario
-        _, _, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(candidate)
-        candidate[3] = c3
-
-        c_pre  = "black"   # NO STIM
-        c_post = "red"     # STIM
-        fig, ax = plt.subplots(figsize=figsize)
-        ax.plot(self.timePoints, preCluster, linestyle="-", label="NO STIM", color=c_pre, alpha=0.95, zorder=3)
-        ax.plot(self.timePoints, postCluster, linestyle="-", label="STIM", color=c_post, alpha=0.95, zorder=3)
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Unc13A copies in cluster")
-        ax.set_xlim(0, 10)
-        ax.set_ylim(0, 50)
-        ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_cluster_recruitment_dc2a.svg") 
-        fig.savefig("../fig/fig_cluster_recruitment_dc2a.png", dpi=dpi) 
-        plt.show()
-
-    def plot_diffusivity_dc2a(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-        fig, ax = plt.subplots(figsize=figsize)
-
-        _, _, _, _, d_pre, d_post = self.simulate(candidate)
-        self.D_model_pre = d_pre
-        self.D_model_post = d_post
-
-        c3 = candidate[3]
-        candidate[3] = 0  # Set kfmm to 0 for deltaC2A scenario
-        solutionPre, solutionPost, _, _, d_pre, d_post = self.simulate(candidate)
-
-        self.D_model_DC2A_pre = d_pre
-        self.D_model_DC2A_post = d_post
-
-        candidate[3] = c3
-
-        print("Experimental:", self.D_exp_DC2A_pre, self.D_exp_DC2A_post)
-        print("Model:", self.D_model_DC2A_pre, self.D_model_DC2A_post)
-
-        mutants = ['WT', r'$\Delta$C2A',] # 'shRNA RIM2', r'$\Delta$C2B']
-
-        # Data
-        D_exp_pre   = [self.D_exp_pre, self.D_exp_DC2A_pre,] #   self.D_exp_shRIM_pre,   self.D_exp_DC2B_pre]
-        D_exp_post  = [self.D_exp_post, self.D_exp_DC2A_post,] #  self.D_exp_shRIM_post,  self.D_exp_DC2B_post]
-        D_model_pre  = [self.D_model_pre, self.D_model_DC2A_pre,] #  self.D_model_shRIM_pre,  self.D_model_DC2B_pre]
-        D_model_post = [self.D_model_post, self.D_model_DC2A_post,] # self.D_model_shRIM_post, self.D_model_DC2B_post]
-
-        D_exp_pre_sem  = [self.D_exp_pre_sem, self.D_exp_DC2A_pre_sem,] #  self.D_exp_shRIM_pre_sem,  self.D_exp_DC2B_pre_sem]
-        D_exp_post_sem = [self.D_exp_post_sem, self.D_exp_DC2A_post_sem,] # self.D_exp_shRIM_post_sem, self.D_exp_DC2B_post_sem]
-
-        n = len(mutants)
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
 
         # Layout: [Exp(NO), Exp(STIM)]   gap   [Model(NO), Model(STIM)]
         bar_width   = 0.18
@@ -2449,7 +1610,6 @@ class Munc13:
         hatch_model = '///'
 
         # EXP: solid fills (with error bars)
-<<<<<<< HEAD
         if fileStr=='C2A':
             lifePre=10
             lifePost = 10
@@ -2474,25 +1634,6 @@ class Munc13:
         ax.set_xticklabels([], fontsize=fontsize)
         ax.tick_params(axis='y', labelsize=fontsize * 0.8)
         ax.set_ylim(bottom=0, top=20)
-=======
-        ax.bar(x_exp_no,   D_exp_pre,  width=bar_width, yerr=D_exp_pre_sem,  capsize=4,
-            color=c_no,   edgecolor='black', label='Exp (NO STIM)')
-        ax.bar(x_exp_stim, D_exp_post, width=bar_width, yerr=D_exp_post_sem, capsize=4,
-            color=c_stim, edgecolor='black', label='Exp (STIM)')
-
-        # MODEL: hatched (use white fill + colored edge so the hatch stands out)
-        ax.bar(x_mod_no,   D_model_pre,  width=bar_width,
-            facecolor='white', edgecolor=c_no,   hatch=hatch_model, label='Model (NO STIM)')
-        ax.bar(x_mod_stim, D_model_post, width=bar_width,
-            facecolor='white', edgecolor=c_stim, hatch=hatch_model, label='Model (STIM)')
-
-        # Axes/labels
-        ax.set_ylabel(r"$\mathrm{Average\ Diffusion}\ (\mu\mathrm{m}^2/\mathrm{s})$", fontsize=fontsize)
-        ax.set_xticks(centers)
-        ax.set_xticklabels(mutants, fontsize=fontsize)
-        ax.tick_params(axis='y', labelsize=fontsize * 0.8)
-        ax.set_ylim(bottom=0)
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
 
         # Adjust layout to fit
         plt.tight_layout(rect=[0, 0, 1, 0.95])
@@ -2500,7 +1641,6 @@ class Munc13:
         # Cleanup
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-<<<<<<< HEAD
         #ax.legend()
         fig.tight_layout()
 
@@ -2884,16 +2024,6 @@ class Munc13:
     
 
     def plot_total_recruitment_wt(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-=======
-        # ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_diffusivity_dc2a.svg") 
-        fig.savefig("../fig/fig_diffusivity_dc2a.png", dpi=dpi) 
-        plt.show()
-
-    def plot_population_dc2a(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         sns.set_style("ticks")
         sns.set_context("paper", rc={
             "font.size": fontsize,
@@ -2907,7 +2037,6 @@ class Munc13:
 
         candidate = self.filteredSolutions[select]
         print("candinate: ", candidate)
-<<<<<<< HEAD
         _, _, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(candidate)
         c_pre  = "black"   # NO STIM
         c_post = "red"     # STIM
@@ -2917,921 +2046,16 @@ class Munc13:
         ax.set_xlabel("Time (s)")
        #
         ax.set_ylabel("Unc13A density on membrane\n(copies/um^2)")
-=======
-
-        c3 = candidate[3]
-        candidate[3] = 0  # Set kfmm to 0 for deltaC2A scenario
-
-        solutionPre, solutionPost, _, _, _, _ = self.simulate(candidate)
-        P_monomer_pre, P_dimer_pre, P_cluster_pre = self.calc_populations(solutionPre)
-        P_monomer_post, P_dimer_post, P_cluster_post = self.calc_populations(solutionPost)
-
-        candidate[3] = c3
-
-        print("Population NO STIM: Monomer: %.2f%%, Dimer: %.2f%%, Cluster: %.2f%%" % (P_monomer_pre*100, P_dimer_pre*100, P_cluster_pre*100))
-        print("Population STIM:    Monomer: %.2f%%, Dimer: %.2f%%, Cluster: %.2f%%" % (P_monomer_post*100, P_dimer_post*100, P_cluster_post*100))
-
-        # plot two pie charts side by side
-        fig, ax = plt.subplots(1, 2, figsize=figsize)
-
-        labels = ['M', 'D', 'C']
-        sizes_pre = [P_monomer_pre, P_dimer_pre, P_cluster_pre]
-        sizes_post = [P_monomer_post, P_dimer_post, P_cluster_post]
-        colors = ['#ff9999','#66b3ff','#99ff99']
-        explode = (0.05, 0.05, 0.05)  # explode all slices slightly
-        wedges1, texts1, autotexts1 = ax[0].pie(sizes_pre, explode=explode, labels=labels, colors=colors,
-                autopct='%1.1f%%', startangle=140, pctdistance=0.85, textprops={'fontsize': fontsize * 0.8})
-        wedges2, texts2, autotexts2 = ax[1].pie(sizes_post, explode=explode, labels=labels, colors=colors,
-                autopct='%1.1f%%', startangle=140, pctdistance=0.85, textprops={'fontsize': fontsize * 0.8})
-        # draw circle for donut shape
-        centre_circle0 = plt.Circle((0,0), 0.70, fc='white')
-        centre_circle1 = plt.Circle((0,0), 0.70, fc='white')
-        ax[0].add_artist(centre_circle0)
-        ax[1].add_artist(centre_circle1)
-        ax[0].set_title('NO STIM', fontsize=fontsize)
-        ax[1].set_title('STIM', fontsize=fontsize)
-        # Equal aspect ratio ensures that pie is drawn as a circle
-        ax[0].axis('equal')  
-        ax[1].axis('equal')
-        fig.tight_layout()
-        fig.savefig("../fig/fig_population_dc2a.svg") 
-        fig.savefig("../fig/fig_population_dc2a.png", dpi=dpi)
-        plt.show()
-
-    def plot_total_recruitment_shrim(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-
-        c3 = candidate[3]
-        candidate[3] = c3 * 2  # Set kfmm to 2x for shRNA RIM2 scenario
-        _, _, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(candidate)
-        candidate[3] = c3
-
-        c_pre  = "black"   # NO STIM
-        c_post = "red"     # STIM
-        fig, ax = plt.subplots(figsize=figsize)
-        ax.plot(self.timePoints, pre / self.Atotal, linestyle="-", label="NO STIM", color=c_pre, alpha=0.95, zorder=3)
-        ax.plot(self.timePoints, post / self.AtotalDense, linestyle="-", label="STIM", color=c_post, alpha=0.95, zorder=3)
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Unc13A density on membrane\n(copies/$\mu$m$^2$)")
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         ax.set_xlim(0, 10)
         ax.set_ylim(0, 600)
         ax.legend()
         fig.tight_layout()
 
-<<<<<<< HEAD
         fig.savefig("../fig/fig_total_recruitment_wt.svg") 
         fig.savefig("../fig/fig_total_recruitment_wt.png", dpi=dpi) 
         plt.show()
         
     
-=======
-        fig.savefig("../fig/fig_total_recruitment_shrim.svg") 
-        fig.savefig("../fig/fig_total_recruitment_shrim.png", dpi=dpi) 
-        plt.show()
-
-    def plot_cluster_recruitment_shrim(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-        
-        c3 = candidate[3]
-        candidate[3] = c3 * 2  # Set kfmm to 2x for shRNA RIM2 scenario
-        _, _, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(candidate)
-        candidate[3] = c3
-
-        c_pre  = "black"   # NO STIM
-        c_post = "red"     # STIM
-        fig, ax = plt.subplots(figsize=figsize)
-        ax.plot(self.timePoints, preCluster, linestyle="-", label="NO STIM", color=c_pre, alpha=0.95, zorder=3)
-        ax.plot(self.timePoints, postCluster, linestyle="-", label="STIM", color=c_post, alpha=0.95, zorder=3)
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Unc13A copies in cluster")
-        ax.set_xlim(0, 10)
-        ax.set_ylim(0, 50)
-        ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_cluster_recruitment_shrim.svg") 
-        fig.savefig("../fig/fig_cluster_recruitment_shrim.png", dpi=dpi) 
-        plt.show()
-
-    def plot_diffusivity_shrim(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-        fig, ax = plt.subplots(figsize=figsize)
-
-        _, _, _, _, d_pre, d_post = self.simulate(candidate)
-        self.D_model_pre = d_pre
-        self.D_model_post = d_post
-
-        c3 = candidate[3]
-        candidate[3] = c3 * 2  # Set kfmm to 2x for shRNA RIM2 scenario
-        solutionPre, solutionPost, _, _, d_pre, d_post = self.simulate(candidate)
-
-        self.D_model_shRIM_pre = d_pre
-        self.D_model_shRIM_post = d_post
-
-        candidate[3] = c3
-
-        print("Experimental:", self.D_exp_shRIM_pre, self.D_exp_shRIM_post)
-        print("Model:", self.D_model_shRIM_pre, self.D_model_shRIM_post)
-
-        mutants = ['WT', 'shRNA RIM2',] # r'$\Delta$C2A', r'$\Delta$C2B']
-
-        # Data
-        D_exp_pre   = [self.D_exp_pre, self.D_exp_shRIM_pre,] #   self.D_exp_shRIM_pre,   self.D_exp_DC2B_pre]
-        D_exp_post  = [self.D_exp_post, self.D_exp_shRIM_post,] #  self.D_exp_shRIM_post,  self.D_exp_DC2B_post]
-        D_model_pre  = [self.D_model_pre, self.D_model_shRIM_pre,] #  self.D_model_shRIM_pre,  self.D_model_DC2B_pre]
-        D_model_post = [self.D_model_post, self.D_model_shRIM_post,] # self.D_model_shRIM_post, self.D_model_DC2B_post]
-
-        D_exp_pre_sem  = [self.D_exp_pre_sem, self.D_exp_shRIM_pre_sem,] #  self.D_exp_shRIM_pre_sem,  self.D_exp_DC2B_pre_sem]
-        D_exp_post_sem = [self.D_exp_post_sem, self.D_exp_shRIM_post_sem,] # self.D_exp_shRIM_post_sem, self.D_exp_DC2B_post_sem]
-
-        n = len(mutants)
-
-        # Layout: [Exp(NO), Exp(STIM)]   gap   [Model(NO), Model(STIM)]
-        bar_width   = 0.18
-        small_gap   = 0.10   # separation between Exp pair and Model pair
-        group_gap   = 0.60   # separation between mutant groups
-        group_width = 4*bar_width + small_gap
-
-        centers = np.arange(n) * (group_width + group_gap)
-        lefts = centers - group_width/2
-
-        x_exp_no   = lefts + 0*bar_width
-        x_exp_stim = lefts + 1*bar_width
-        x_mod_no   = lefts + 2*bar_width + small_gap
-        x_mod_stim = lefts + 3*bar_width + small_gap
-
-        # Colors and styles
-        c_no, c_stim = 'black', 'red'
-        hatch_model = '///'
-
-        # EXP: solid fills (with error bars)
-        ax.bar(x_exp_no,   D_exp_pre,  width=bar_width, yerr=D_exp_pre_sem,  capsize=4,
-            color=c_no,   edgecolor='black', label='Exp (NO STIM)')
-        ax.bar(x_exp_stim, D_exp_post, width=bar_width, yerr=D_exp_post_sem, capsize=4,
-            color=c_stim, edgecolor='black', label='Exp (STIM)')
-
-        # MODEL: hatched (use white fill + colored edge so the hatch stands out)
-        ax.bar(x_mod_no,   D_model_pre,  width=bar_width,
-            facecolor='white', edgecolor=c_no,   hatch=hatch_model, label='Model (NO STIM)')
-        ax.bar(x_mod_stim, D_model_post, width=bar_width,
-            facecolor='white', edgecolor=c_stim, hatch=hatch_model, label='Model (STIM)')
-
-        # Axes/labels
-        ax.set_ylabel(r"$\mathrm{Average\ Diffusion}\ (\mu\mathrm{m}^2/\mathrm{s})$", fontsize=fontsize)
-        ax.set_xticks(centers)
-        ax.set_xticklabels(mutants, fontsize=fontsize)
-        ax.tick_params(axis='y', labelsize=fontsize * 0.8)
-        ax.set_ylim(bottom=0)
-
-        # Adjust layout to fit
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
-
-        # Cleanup
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        # ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_diffusivity_shrim.svg") 
-        fig.savefig("../fig/fig_diffusivity_shrim.png", dpi=dpi) 
-        plt.show()
-
-    def plot_population_shrim(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-
-        c3 = candidate[3]
-        candidate[3] = c3 * 2  # Set kfmm to 2x for shRNA RIM2 scenario
-
-        solutionPre, solutionPost, _, _, _, _ = self.simulate(candidate)
-        P_monomer_pre, P_dimer_pre, P_cluster_pre = self.calc_populations(solutionPre)
-        P_monomer_post, P_dimer_post, P_cluster_post = self.calc_populations(solutionPost)
-
-        candidate[3] = c3
-
-        print("Population NO STIM: Monomer: %.2f%%, Dimer: %.2f%%, Cluster: %.2f%%" % (P_monomer_pre*100, P_dimer_pre*100, P_cluster_pre*100))
-        print("Population STIM:    Monomer: %.2f%%, Dimer: %.2f%%, Cluster: %.2f%%" % (P_monomer_post*100, P_dimer_post*100, P_cluster_post*100))
-
-        # plot two pie charts side by side
-        fig, ax = plt.subplots(1, 2, figsize=figsize)
-
-        labels = ['M', 'D', 'C']
-        sizes_pre = [P_monomer_pre, P_dimer_pre, P_cluster_pre]
-        sizes_post = [P_monomer_post, P_dimer_post, P_cluster_post]
-        colors = ['#ff9999','#66b3ff','#99ff99']
-        explode = (0.05, 0.05, 0.05)  # explode all slices slightly
-        wedges1, texts1, autotexts1 = ax[0].pie(sizes_pre, explode=explode, labels=labels, colors=colors,
-                autopct='%1.1f%%', startangle=140, pctdistance=0.85, textprops={'fontsize': fontsize * 0.8})
-        wedges2, texts2, autotexts2 = ax[1].pie(sizes_post, explode=explode, labels=labels, colors=colors,
-                autopct='%1.1f%%', startangle=140, pctdistance=0.85, textprops={'fontsize': fontsize * 0.8})
-        # draw circle for donut shape
-        centre_circle0 = plt.Circle((0,0), 0.70, fc='white')
-        centre_circle1 = plt.Circle((0,0), 0.70, fc='white')
-        ax[0].add_artist(centre_circle0)
-        ax[1].add_artist(centre_circle1)
-        ax[0].set_title('NO STIM', fontsize=fontsize)
-        ax[1].set_title('STIM', fontsize=fontsize)
-        # Equal aspect ratio ensures that pie is drawn as a circle
-        ax[0].axis('equal')  
-        ax[1].axis('equal')
-        fig.tight_layout()
-        fig.savefig("../fig/fig_population_shrim.svg") 
-        fig.savefig("../fig/fig_population_shrim.png", dpi=dpi)
-        plt.show()
-
-    def plot_total_recruitment_dc2b(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-
-        c0 = candidate[0]
-        candidate[0] = c0 * 0.5  # Set kfsr to 0.5x for DeltaC2B scenario
-        _, _, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(candidate)
-        candidate[0] = c0
-
-        c_pre  = "black"   # NO STIM
-        c_post = "red"     # STIM
-        fig, ax = plt.subplots(figsize=figsize)
-        ax.plot(self.timePoints, pre / self.Atotal, linestyle="-", label="NO STIM", color=c_pre, alpha=0.95, zorder=3)
-        ax.plot(self.timePoints, post / self.AtotalDense, linestyle="-", label="STIM", color=c_post, alpha=0.95, zorder=3)
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Unc13A density on membrane\n(copies/$\mu$m$^2$)")
-        ax.set_xlim(0, 10)
-        ax.set_ylim(0, 600)
-        ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_total_recruitment_dc2b.svg") 
-        fig.savefig("../fig/fig_total_recruitment_dc2b.png", dpi=dpi) 
-        plt.show()
-
-    def plot_cluster_recruitment_dc2b(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-        
-        c0 = candidate[0]
-        candidate[0] = c0 * 0.5  # Set kfsr to 0.5x for DeltaC2B scenario
-        _, _, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(candidate)
-        candidate[0] = c0
-
-        c_pre  = "black"   # NO STIM
-        c_post = "red"     # STIM
-        fig, ax = plt.subplots(figsize=figsize)
-        ax.plot(self.timePoints, preCluster, linestyle="-", label="NO STIM", color=c_pre, alpha=0.95, zorder=3)
-        ax.plot(self.timePoints, postCluster, linestyle="-", label="STIM", color=c_post, alpha=0.95, zorder=3)
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Unc13A copies in cluster")
-        ax.set_xlim(0, 10)
-        ax.set_ylim(0, 50)
-        ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_cluster_recruitment_dc2b.svg") 
-        fig.savefig("../fig/fig_cluster_recruitment_dc2b.png", dpi=dpi) 
-        plt.show()
-
-    def plot_diffusivity_dc2b(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-        fig, ax = plt.subplots(figsize=figsize)
-
-        _, _, _, _, d_pre, d_post = self.simulate(candidate)
-        self.D_model_pre = d_pre
-        self.D_model_post = d_post
-
-        c0 = candidate[0]
-        candidate[0] = c0 * 0.5  # Set kfsr to 0.5x for DeltaC2B scenario
-        solutionPre, solutionPost, _, _, d_pre, d_post = self.simulate(candidate)
-
-        self.D_model_DC2B_pre = d_pre
-        self.D_model_DC2B_post = d_post
-
-        candidate[0] = c0
-
-        print("Experimental:", self.D_exp_DC2B_pre, self.D_exp_DC2B_post)
-        print("Model:", self.D_model_DC2B_pre, self.D_model_DC2B_post)
-
-        mutants = ['WT', r'$\Delta$C2B',] # r'$\Delta$C2A', r'$\Delta$C2B']
-
-        # Data
-        D_exp_pre   = [self.D_exp_pre, self.D_exp_DC2B_pre,] #   self.D_exp_shRIM_pre,   self.D_exp_DC2B_pre]
-        D_exp_post  = [self.D_exp_post, self.D_exp_DC2B_post,] #  self.D_exp_shRIM_post,  self.D_exp_DC2B_post]
-        D_model_pre  = [self.D_model_pre, self.D_model_DC2B_pre,] #  self.D_model_shRIM_pre,  self.D_model_DC2B_pre]
-        D_model_post = [self.D_model_post, self.D_model_DC2B_post,] # self.D_model_shRIM_post, self.D_model_DC2B_post]
-
-        D_exp_pre_sem  = [self.D_exp_pre_sem, self.D_exp_DC2B_pre_sem,] #  self.D_exp_shRIM_pre_sem,  self.D_exp_DC2B_pre_sem]
-        D_exp_post_sem = [self.D_exp_post_sem, self.D_exp_DC2B_post_sem,] # self.D_exp_shRIM_post_sem, self.D_exp_DC2B_post_sem]
-
-        n = len(mutants)
-
-        # Layout: [Exp(NO), Exp(STIM)]   gap   [Model(NO), Model(STIM)]
-        bar_width   = 0.18
-        small_gap   = 0.10   # separation between Exp pair and Model pair
-        group_gap   = 0.60   # separation between mutant groups
-        group_width = 4*bar_width + small_gap
-
-        centers = np.arange(n) * (group_width + group_gap)
-        lefts = centers - group_width/2
-
-        x_exp_no   = lefts + 0*bar_width
-        x_exp_stim = lefts + 1*bar_width
-        x_mod_no   = lefts + 2*bar_width + small_gap
-        x_mod_stim = lefts + 3*bar_width + small_gap
-
-        # Colors and styles
-        c_no, c_stim = 'black', 'red'
-        hatch_model = '///'
-
-        # EXP: solid fills (with error bars)
-        ax.bar(x_exp_no,   D_exp_pre,  width=bar_width, yerr=D_exp_pre_sem,  capsize=4,
-            color=c_no,   edgecolor='black', label='Exp (NO STIM)')
-        ax.bar(x_exp_stim, D_exp_post, width=bar_width, yerr=D_exp_post_sem, capsize=4,
-            color=c_stim, edgecolor='black', label='Exp (STIM)')
-
-        # MODEL: hatched (use white fill + colored edge so the hatch stands out)
-        ax.bar(x_mod_no,   D_model_pre,  width=bar_width,
-            facecolor='white', edgecolor=c_no,   hatch=hatch_model, label='Model (NO STIM)')
-        ax.bar(x_mod_stim, D_model_post, width=bar_width,
-            facecolor='white', edgecolor=c_stim, hatch=hatch_model, label='Model (STIM)')
-
-        # Axes/labels
-        ax.set_ylabel(r"$\mathrm{Average\ Diffusion}\ (\mu\mathrm{m}^2/\mathrm{s})$", fontsize=fontsize)
-        ax.set_xticks(centers)
-        ax.set_xticklabels(mutants, fontsize=fontsize)
-        ax.tick_params(axis='y', labelsize=fontsize * 0.8)
-        ax.set_ylim(bottom=0)
-
-        # Adjust layout to fit
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
-
-        # Cleanup
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        # ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_diffusivity_dc2b.svg") 
-        fig.savefig("../fig/fig_diffusivity_dc2b.png", dpi=dpi) 
-        plt.show()
-
-    def plot_population_dc2b(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-
-        c0 = candidate[0]
-        candidate[0] = c0 * 0.5  # Set kfsr to 0.5x for DeltaC2B scenario
-
-        solutionPre, solutionPost, _, _, _, _ = self.simulate(candidate)
-        P_monomer_pre, P_dimer_pre, P_cluster_pre = self.calc_populations(solutionPre)
-        P_monomer_post, P_dimer_post, P_cluster_post = self.calc_populations(solutionPost)
-
-        candidate[0] = c0
-
-        print("Population NO STIM: Monomer: %.2f%%, Dimer: %.2f%%, Cluster: %.2f%%" % (P_monomer_pre*100, P_dimer_pre*100, P_cluster_pre*100))
-        print("Population STIM:    Monomer: %.2f%%, Dimer: %.2f%%, Cluster: %.2f%%" % (P_monomer_post*100, P_dimer_post*100, P_cluster_post*100))
-
-        # plot two pie charts side by side
-        fig, ax = plt.subplots(1, 2, figsize=figsize)
-
-        labels = ['M', 'D', 'C']
-        sizes_pre = [P_monomer_pre, P_dimer_pre, P_cluster_pre]
-        sizes_post = [P_monomer_post, P_dimer_post, P_cluster_post]
-        colors = ['#ff9999','#66b3ff','#99ff99']
-        explode = (0.05, 0.05, 0.05)  # explode all slices slightly
-        wedges1, texts1, autotexts1 = ax[0].pie(sizes_pre, explode=explode, labels=labels, colors=colors,
-                autopct='%1.1f%%', startangle=140, pctdistance=0.85, textprops={'fontsize': fontsize * 0.8})
-        wedges2, texts2, autotexts2 = ax[1].pie(sizes_post, explode=explode, labels=labels, colors=colors,
-                autopct='%1.1f%%', startangle=140, pctdistance=0.85, textprops={'fontsize': fontsize * 0.8})
-        # draw circle for donut shape
-        centre_circle0 = plt.Circle((0,0), 0.70, fc='white')
-        centre_circle1 = plt.Circle((0,0), 0.70, fc='white')
-        ax[0].add_artist(centre_circle0)
-        ax[1].add_artist(centre_circle1)
-        ax[0].set_title('NO STIM', fontsize=fontsize)
-        ax[1].set_title('STIM', fontsize=fontsize)
-        # Equal aspect ratio ensures that pie is drawn as a circle
-        ax[0].axis('equal')  
-        ax[1].axis('equal')
-        fig.tight_layout()
-        fig.savefig("../fig/fig_population_dc2b.svg") 
-        fig.savefig("../fig/fig_population_dc2b.png", dpi=dpi)
-        plt.show()
-
-    def plot_total_recruitment_endogenous(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-
-        c7 = candidate[7]
-        candidate[7] = c7 * 0.1  # Set munc13 concentration to 0.1x for endogenous munc13 scenario
-        _, _, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(candidate)
-        candidate[7] = c7
-
-        c_pre  = "black"   # NO STIM
-        c_post = "red"     # STIM
-        fig, ax = plt.subplots(figsize=figsize)
-        ax.plot(self.timePoints, pre / self.Atotal, linestyle="-", label="NO STIM", color=c_pre, alpha=0.95, zorder=3)
-        ax.plot(self.timePoints, post / self.AtotalDense, linestyle="-", label="STIM", color=c_post, alpha=0.95, zorder=3)
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Unc13A density on membrane\n(copies/$\mu$m$^2$)")
-        ax.set_xlim(0, 10)
-        ax.set_ylim(0, 600)
-        ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_total_recruitment_endogenous.svg") 
-        fig.savefig("../fig/fig_total_recruitment_endogenous.png", dpi=dpi) 
-        plt.show()
-
-    def plot_cluster_recruitment_endogenous(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-        
-        c7 = candidate[7]
-        candidate[7] = c7 * 0.1  # Set munc13 concentration to 0.1x for endogenous munc13 scenario
-        _, _, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(candidate)
-        candidate[7] = c7
-
-        c_pre  = "black"   # NO STIM
-        c_post = "red"     # STIM
-        fig, ax = plt.subplots(figsize=figsize)
-        ax.plot(self.timePoints, preCluster, linestyle="-", label="NO STIM", color=c_pre, alpha=0.95, zorder=3)
-        ax.plot(self.timePoints, postCluster, linestyle="-", label="STIM", color=c_post, alpha=0.95, zorder=3)
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Unc13A copies in cluster")
-        ax.set_xlim(0, 10)
-        ax.set_ylim(0, 50)
-        ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_cluster_recruitment_endogenous.svg") 
-        fig.savefig("../fig/fig_cluster_recruitment_endogenous.png", dpi=dpi) 
-        plt.show()
-
-    def plot_diffusivity_endogenous(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-        fig, ax = plt.subplots(figsize=figsize)
-
-        _, _, _, _, d_pre, d_post = self.simulate(candidate)
-        self.D_model_pre = d_pre
-        self.D_model_post = d_post
-
-        c7 = candidate[7]
-        candidate[7] = c7 * 0.1  # Set munc13 concentration to 0.1x for endogenous munc13 scenario
-        solutionPre, solutionPost, _, _, d_pre, d_post = self.simulate(candidate)
-
-        self.D_model_endogenous_pre = d_pre
-        self.D_model_endogenous_post = d_post
-
-        candidate[7] = c7
-
-        # print("Experimental:", self.D_exp_endogenous_pre, self.D_exp_endogenous_post)
-        print("Model:", self.D_model_endogenous_pre, self.D_model_endogenous_post)
-
-        mutants = ['WT', 'Endogenous',] # r'$\Delta$C2A', r'$\Delta$C2B']
-
-        # Data
-        D_exp_pre   = [self.D_exp_pre, 0,] #   self.D_exp_shRIM_pre,   self.D_exp_DC2B_pre]
-        D_exp_post  = [self.D_exp_post, 0,] #  self.D_exp_shRIM_post,  self.D_exp_DC2B_post]
-        D_model_pre  = [self.D_model_pre, self.D_model_endogenous_pre,] #  self.D_model_shRIM_pre,  self.D_model_DC2B_pre]
-        D_model_post = [self.D_model_post, self.D_model_endogenous_post,] # self.D_model_shRIM_post, self.D_model_DC2B_post]
-
-        D_exp_pre_sem  = [self.D_exp_pre_sem, 0,] #  self.D_exp_shRIM_pre_sem,  self.D_exp_DC2B_pre_sem]
-        D_exp_post_sem = [self.D_exp_post_sem, 0,] # self.D_exp_shRIM_post_sem, self.D_exp_DC2B_post_sem]
-
-        n = len(mutants)
-
-        # Layout: [Exp(NO), Exp(STIM)]   gap   [Model(NO), Model(STIM)]
-        bar_width   = 0.18
-        small_gap   = 0.10   # separation between Exp pair and Model pair
-        group_gap   = 0.60   # separation between mutant groups
-        group_width = 4*bar_width + small_gap
-
-        centers = np.arange(n) * (group_width + group_gap)
-        lefts = centers - group_width/2
-
-        x_exp_no   = lefts + 0*bar_width
-        x_exp_stim = lefts + 1*bar_width
-        x_mod_no   = lefts + 2*bar_width + small_gap
-        x_mod_stim = lefts + 3*bar_width + small_gap
-
-        # Colors and styles
-        c_no, c_stim = 'black', 'red'
-        hatch_model = '///'
-
-        # EXP: solid fills (with error bars)
-        ax.bar(x_exp_no,   D_exp_pre,  width=bar_width, yerr=D_exp_pre_sem,  capsize=4,
-            color=c_no,   edgecolor='black', label='Exp (NO STIM)')
-        ax.bar(x_exp_stim, D_exp_post, width=bar_width, yerr=D_exp_post_sem, capsize=4,
-            color=c_stim, edgecolor='black', label='Exp (STIM)')
-
-        # MODEL: hatched (use white fill + colored edge so the hatch stands out)
-        ax.bar(x_mod_no,   D_model_pre,  width=bar_width,
-            facecolor='white', edgecolor=c_no,   hatch=hatch_model, label='Model (NO STIM)')
-        ax.bar(x_mod_stim, D_model_post, width=bar_width,
-            facecolor='white', edgecolor=c_stim, hatch=hatch_model, label='Model (STIM)')
-
-        # Axes/labels
-        ax.set_ylabel(r"$\mathrm{Average\ Diffusion}\ (\mu\mathrm{m}^2/\mathrm{s})$", fontsize=fontsize)
-        ax.set_xticks(centers)
-        ax.set_xticklabels(mutants, fontsize=fontsize)
-        ax.tick_params(axis='y', labelsize=fontsize * 0.8)
-        ax.set_ylim(bottom=0)
-
-        # Adjust layout to fit
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
-
-        # Cleanup
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        # ax.legend()
-        fig.tight_layout()
-
-        fig.savefig("../fig/fig_diffusivity_endogenous.svg") 
-        fig.savefig("../fig/fig_diffusivity_endogenous.png", dpi=dpi) 
-        plt.show()
-
-    def plot_population_endogenous(self, select=3, figsize=(4, 3), fontsize=12, dpi=300):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        candidate = self.filteredSolutions[select]
-        print("candinate: ", candidate)
-
-        c7 = candidate[7]
-        candidate[7] = c7 * 0.1  # Set munc13 concentration to 0.1x for endogenous munc13 scenario
-
-        solutionPre, solutionPost, _, _, _, _ = self.simulate(candidate)
-        P_monomer_pre, P_dimer_pre, P_cluster_pre = self.calc_populations(solutionPre)
-        P_monomer_post, P_dimer_post, P_cluster_post = self.calc_populations(solutionPost)
-
-        candidate[7] = c7
-
-        print("Population NO STIM: Monomer: %.2f%%, Dimer: %.2f%%, Cluster: %.2f%%" % (P_monomer_pre*100, P_dimer_pre*100, P_cluster_pre*100))
-        print("Population STIM:    Monomer: %.2f%%, Dimer: %.2f%%, Cluster: %.2f%%" % (P_monomer_post*100, P_dimer_post*100, P_cluster_post*100))
-
-        # plot two pie charts side by side
-        fig, ax = plt.subplots(1, 2, figsize=figsize)
-
-        labels = ['M', 'D', 'C']
-        sizes_pre = [P_monomer_pre, P_dimer_pre, P_cluster_pre]
-        sizes_post = [P_monomer_post, P_dimer_post, P_cluster_post]
-        colors = ['#ff9999','#66b3ff','#99ff99']
-        explode = (0.05, 0.05, 0.05)  # explode all slices slightly
-        wedges1, texts1, autotexts1 = ax[0].pie(sizes_pre, explode=explode, labels=labels, colors=colors,
-                autopct='%1.1f%%', startangle=140, pctdistance=0.85, textprops={'fontsize': fontsize * 0.8})
-        wedges2, texts2, autotexts2 = ax[1].pie(sizes_post, explode=explode, labels=labels, colors=colors,
-                autopct='%1.1f%%', startangle=140, pctdistance=0.85, textprops={'fontsize': fontsize * 0.8})
-        # draw circle for donut shape
-        centre_circle0 = plt.Circle((0,0), 0.70, fc='white')
-        centre_circle1 = plt.Circle((0,0), 0.70, fc='white')
-        ax[0].add_artist(centre_circle0)
-        ax[1].add_artist(centre_circle1)
-        ax[0].set_title('NO STIM', fontsize=fontsize)
-        ax[1].set_title('STIM', fontsize=fontsize)
-        # Equal aspect ratio ensures that pie is drawn as a circle
-        ax[0].axis('equal')  
-        ax[1].axis('equal')
-        fig.tight_layout()
-        fig.savefig("../fig/fig_population_endogenous.svg") 
-        fig.savefig("../fig/fig_population_endogenous.png", dpi=dpi)
-        plt.show()
-
-    # plot the total munc13 in cluster, compared with experimental kinetic, nerdss simulaition data
-    def plot_cluster_kinetic(self, best=300, select=297, totalTime=10.0, dt=0.1, figsize=(9,6), fontsize=12, dpi=600):
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        idx = select
-        candidate = self.filteredSolutions[idx]
-        print("candinate: ", candidate)
-
-        _, _, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(candidate)
-        data = {
-            "timePoints": self.timePoints,
-            "preCluster": preCluster,
-            "postCluster": postCluster,
-            "pre": pre,
-            "post": post
-        }
-        df = pd.DataFrame(data)
-        df.to_csv(f"../../NERDSS/data/munc13_copies_ode.csv", index=False)
-        
-        data = {
-            "timePoints": self.timePointsPre,
-            "preEq": preEq,
-            "postEq": postEq
-        }
-        df = pd.DataFrame(data)
-        df.to_csv(f"../../NERDSS/data/munc13_copies_eq_ode.csv", index=False)
-
-        df_pre = pd.read_csv("../../NERDSS/data/stochastic_pre.csv")
-        df_post = pd.read_csv("../../NERDSS/data/stochastic_post.csv")
-
-        # ----- Publication-oriented defaults -----
-        plt.rcParams.update({
-            "figure.dpi": 300, "savefig.dpi": 300,
-            "font.size": fontsize, "axes.labelsize": fontsize, "axes.titlesize": fontsize,
-            "legend.fontsize": fontsize, "xtick.labelsize": fontsize, "ytick.labelsize": fontsize,
-            "axes.linewidth": 0.8, "lines.linewidth": 1.4,
-            "pdf.fonttype": 42, "ps.fonttype": 42,  # editable text in vector exports
-        })
-
-        fig, ax = plt.subplots(figsize=figsize)
-
-        c_pre  = "black"   # NO STIM
-        c_post = "red"     # STIM
-
-        # --- PRE (NO STIM): scatter means + SEM band + ODE line + experiment---
-        pre_t   = df_pre["timePoints"].to_numpy()
-        pre_m   = df_pre["munc13_cluster_mean"].to_numpy()
-        pre_sem = df_pre["munc13_cluster_sem"].to_numpy()
-
-        # Errorbar points
-        err1 = ax.errorbar(
-            pre_t, pre_m, yerr=pre_sem,
-            fmt="o", ms=3, mfc="white", mew=0.9,
-            capsize=2, elinewidth=0.9,
-            label="NO STIM: NERDSS",
-            color=c_pre, ecolor=c_pre, linestyle="none", zorder=2
-        )
-
-        # ODE line
-        line_pre, = ax.plot(self.timePoints, preCluster, linestyle="-", label="NO STIM: ODE", color=c_pre, alpha=0.95, zorder=3)
-
-        # plot experiment
-        # NO STIM
-        solutionPre, solutionPost, _, _, Dpre, Dpost = self.simulate(candidate)
-        _, _, preCluster, postCluster, pre, post, preEq, postEq,_,_,_,_,_,_ = self.calculate_results(candidate)
-        mc, md = self.get_cluster_time_series(solutionPre, False)
-        fold_increase = self.get_simulated_fold_change(mc, md)
-        delta = self.compute_background_from_target_increase(fold_increase)
-
-        relInt = (self.expdata.expInt - delta) / (self.expdata.expInt[0] - delta)
-        sem = self.expdata.expSEM / (self.expdata.expInt[0] - delta)
-        time = self.expdata.time
-        ax.errorbar(time, relInt * preCluster[0], yerr=sem * preCluster[0], linestyle="--", color=c_pre, alpha=0.95, label='NO STIM: Exp')
-
-        # --- POST (STIM): scatter means + SEM band + ODE line + experiemnt---
-        post_t   = df_post["timePoints"].to_numpy()
-        post_m   = df_post["munc13_cluster_mean"].to_numpy()
-        post_sem = df_post["munc13_cluster_sem"].to_numpy()
-
-        err2 = ax.errorbar(
-            post_t, post_m, yerr=post_sem,
-            fmt="s", ms=3, mfc="white", mew=0.9,
-            capsize=2, elinewidth=0.9,
-            label="STIM: NERDSS",
-            color=c_post, ecolor=c_post, linestyle="none", zorder=2
-        )
-
-        line_post, = ax.plot(self.timePoints, postCluster, linestyle="-", label="STIM: ODE", color=c_post, alpha=0.95, zorder=3)
-
-        # STIM
-        mc, md = self.get_cluster_time_series(solutionPost, True)
-        fold_increase = self.get_simulated_fold_change(mc, md)
-        delta = self.compute_background_from_target_increase(fold_increase)
-
-        relInt = (self.expdata.expInt - delta) / (self.expdata.expInt[0] - delta)
-        sem = self.expdata.expSEM / (self.expdata.expInt[0] - delta)
-        time = self.expdata.time
-        ax.errorbar(time, relInt * postCluster[0], yerr=sem * postCluster[0], linestyle="--", color=c_post, alpha=0.95, label='STIM: Exp')
-    
-        # ----- Axes cosmetics -----
-        ax.set_xlabel("Time (s)")                       # adjust units/label to yours
-        ax.set_ylabel("Unc13A Copies in Cluster Region")   # adjust units/label to yours
-
-        ax.legend(fontsize=12)
-
-        fig.tight_layout()
-
-        # Save as vector + raster
-        fig.savefig("../fig/munc13_timecourse.svg")  # vector for journals
-        fig.savefig("../fig/munc13_timecourse.png", dpi=dpi)  # raster fallback
-        plt.show()
-
-    # plot the diffusion constants of dilute phase; plot the percentage of cluster copies
-    def plot_diffusion_dilute_percentage_cluster(self, select=298, figsize=(2.8, 7), fontsize=18, dpi=600):
-        """
-        Average diffusion of Munc13 copies in the dilute phase and percentage of Munc13 copies in the cluster.
-        """
-        sns.set_style("ticks")
-        sns.set_context("paper", rc={
-            "font.size": fontsize,
-            "axes.titlesize": fontsize,
-            "axes.labelsize": fontsize,
-            "xtick.labelsize": fontsize,
-            "ytick.labelsize": fontsize,
-            "legend.fontsize": fontsize,
-            "font.family": "serif"
-        })
-
-        if not hasattr(self, "filteredSolutions") or not self.filteredSolutions:
-            print("Filtered solutions not found. Run `filter_and_store_solutions()` first.")
-            return
-
-        idx = select
-        candidate = self.filteredSolutions[idx]
-        print(candidate)
-        
-        D1 = candidate[9]  # Monomer diffusion constant on membrane
-        D2 = candidate[9] / candidate[10] # Dimer diffusion constant on membrane
-        solutionPre, solutionPost, _, _, _, _ = self.simulate(candidate)
-
-        D_dilute_pre = self.calc_diffusion_dilute(D1, D2, solutionPre)
-        D_dilute_post = self.calc_diffusion_dilute(D1, D2, solutionPost)
-        perc_cluster_pre = self.calc_percentages_cluster(solutionPre)
-        perc_cluster_post = self.calc_percentages_cluster(solutionPost)
-        _, perc_cluster_pre_2D = self.calc_3D_2D_percentages_cluster(solutionPre)
-        _, perc_cluster_post_2D = self.calc_3D_2D_percentages_cluster(solutionPost)
-
-        print(f"Average Diffusion in Dilute Phase: No Stim={D_dilute_pre:.4f}, Stim={D_dilute_post:.4f}")
-        print(f"Percentage of Munc13 in Cluster: No Stim={perc_cluster_pre:.4f}, Stim={perc_cluster_post:.4f}")
-        print(f"Percentage of Munc13 in Cluster From 2D: No Stim={perc_cluster_pre:.4f}, Stim={perc_cluster_post:.4f}")
-
-        categories = ["NO STIM", "STIM"]
-        x = np.arange(len(categories))
-        width = 0.35
-
-        # Plot: Diffusion constants in dilute phase
-        fig, axe = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
-    
-        axe.bar(x, [D_dilute_pre, D_dilute_post], width, capsize=5, label="Model", color=['black', 'red'], alpha=1.0)
-    
-        axe.set_xticks(x)
-        axe.set_xticklabels(categories, fontsize=fontsize)
-        axe.set_ylabel(r"$\mathrm{Average\ Diffusion\ out\ of\ Cluster}\ (\mu\mathrm{m}^2/\mathrm{s})$", fontsize=fontsize)
-        # axe.set_title("Average Diffusion in Dilute Phase", fontsize=fontsize)
-        fig.tight_layout()
-        fig.savefig("../data/dilute_diffusion.png", dpi=dpi, bbox_inches="tight")
-        plt.show()
-
-        # Plot: Percentage of Munc13 copies in the cluster
-        fig, axe = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
-    
-        axe.bar(x, [perc_cluster_pre*100, perc_cluster_post*100], width, capsize=5, label="Model", color=['black', 'red'], alpha=1.0)
-    
-        axe.set_xticks(x)
-        axe.set_xticklabels(categories, fontsize=fontsize)
-        axe.set_ylabel(r"$\mathrm{Unc13A\ in\ Cluster}\ (\%)$", fontsize=fontsize)
-        # axe.set_title("Percentage of Munc13 in Cluster", fontsize=fontsize)
-        fig.tight_layout()
-        fig.savefig("../data/cluster_perc.png", dpi=dpi, bbox_inches="tight")
-        plt.show()
-
-        # Plot: Percentage of Munc13 from 2D in the cluster
-        fig, axe = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
-    
-        axe.bar(x, [perc_cluster_pre_2D*100, perc_cluster_post_2D*100], width, capsize=5, label="Model", color=['black', 'red'], alpha=1.0)
-    
-        axe.set_xticks(x)
-        axe.set_xticklabels(categories, fontsize=fontsize)
-        axe.set_ylabel(r"$\mathrm{2D\ Lateral\ Recruitment\ to\ Cluster}\ (\%)$", fontsize=fontsize)
-        # axe.set_title("Percentage of Munc13 in Cluster from 2D", fontsize=fontsize)
-        fig.tight_layout()
-        fig.savefig("../data/cluster_from2D.png", dpi=dpi, bbox_inches="tight")
-        plt.show()
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
 
     # plot the distribution of optimized parameters
     def plot_parms(self, best=100, select=100, totalTime=10.0, dt=0.1,
@@ -3884,7 +2108,6 @@ class Munc13:
         self.timePoints = [i * dt for i in range(n_time_points + 1)]
 
         # --------------------- load and pick solutions --------------------------
-<<<<<<< HEAD
         eDF = pd.read_csv("../data/optimizedParms.txt", sep=",", engine="python")
         eDF.columns = eDF.columns.str.strip()
         eDF = eDF.sort_values(by="Rank")
@@ -3894,17 +2117,6 @@ class Munc13:
             rank = int(row["Rank"])
             fitness = float(row["Fitness"])
             param_cols_all = [c for c in eDF.columns if c not in ["Rank", "Fitness"]]
-=======
-        df = pd.read_csv("../data/optimizedParms.txt", sep=",", engine="python")
-        df.columns = df.columns.str.strip()
-        df = df.sort_values(by="Rank")
-
-        solutions = []
-        for _, row in df.iterrows():
-            rank = int(row["Rank"])
-            fitness = float(row["Fitness"])
-            param_cols_all = [c for c in df.columns if c not in ["Rank", "Fitness"]]
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
             param_vector = [float(row[c]) for c in param_cols_all]
             solutions.append((rank, fitness, param_vector))
 
@@ -3928,11 +2140,7 @@ class Munc13:
         print(f"Randomly selected {select} solutions for parameter histograms.")
 
         # --------------------------- prepare data -------------------------------
-<<<<<<< HEAD
         param_cols = [c for c in eDF.columns if c not in ["Rank", "Fitness"]]
-=======
-        param_cols = [c for c in df.columns if c not in ["Rank", "Fitness"]]
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         n_params = len(param_cols)
 
         param_matrix = np.array([filtered_solutions[i][2] for i in random_indices],
@@ -4018,11 +2226,6 @@ class Munc13:
         self,
         best=100,
         select=100,
-<<<<<<< HEAD
-=======
-        totalTime=10.0,
-        dt=0.1,
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         parameter_ranges=None,
         percent=10,                    # use top `percent`% of solutions by Rank
         figsize=(11, 7),
@@ -4030,10 +2233,7 @@ class Munc13:
         dpi=600,
         bar_width=0.7,
         save_path="../fig/params-summary.png",
-<<<<<<< HEAD
         inputFile = "../data/dummy.txt",
-=======
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
     ):
         """
         Summary plot of parameter ranges:
@@ -4059,7 +2259,6 @@ class Munc13:
             "font.family": "serif"
         })
 
-<<<<<<< HEAD
         
 
         # --------------------- load solutions -----------------------------------
@@ -4068,40 +2267,10 @@ class Munc13:
 
         # Parameter columns = everything except bookkeeping
         param_cols = [c for c in eDF.columns if c not in ("Rank", "Fitness")]
-=======
-        if parameter_ranges is None:
-            parameter_ranges = {
-                "kfsr":          {"min": 0.001, "max": 10},
-                "krsr_nostim":   {"min": 0.1,   "max": 1000},
-                "krsr_stim":     {"min": 0.1,   "max": 1000},
-                "kfmm":          {"min": 0.001, "max": 10},
-                "krmm":          {"min": 0.01,  "max": 100},
-                "kfc_nostim":    {"min": 0.001, "max": 10},
-                "kfc_stim":      {"min": 0.001, "max": 10},
-                "S0":            {"min": 0.01,  "max": 10},
-                "R0":            {"min": 100,   "max": 500},
-                "D1":            {"min": 0.05,  "max": 5},
-                "D1_over_D2":    {"min": 1.5,   "max": 5},
-                "X":             {"min": 10,    "max": 10},     # constant
-            }
-
-        # --------------------- model times for completeness ---------------------
-        self.t_max = totalTime
-        n_time_points = int(totalTime / dt)
-        self.timePoints = [i * dt for i in range(n_time_points + 1)]
-
-        # --------------------- load solutions -----------------------------------
-        df = pd.read_csv("../data/optimizedParms.txt", sep=",", engine="python")
-        df.columns = df.columns.str.strip()
-
-        # Parameter columns = everything except bookkeeping
-        param_cols = [c for c in df.columns if c not in ("Rank", "Fitness")]
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         if not param_cols:
             raise ValueError("No parameter columns found in optimizedParms.txt")
 
         # Best-by-rank subset size
-<<<<<<< HEAD
         n_total = len(eDF)
         n_best = max(1, int(np.floor(n_total * (percent / 100.0))))
         # Best subset by fitness, larger fitness = better)
@@ -4110,21 +2279,10 @@ class Munc13:
 
         print(f"Total solutions loaded: {n_total}")
         print(f"Using top {percent}% by Fitness -> {n_best} solutions.")
-=======
-        n_total = len(df)
-        n_best = max(1, int(np.floor(n_total * (percent / 100.0))))
-        # Best subset by Rank (smaller Rank = better)
-        best_df = df.nsmallest(n_best, "Rank")
-        best_row = df.nsmallest(1, "Rank").iloc[0]
-
-        print(f"Total solutions loaded: {n_total}")
-        print(f"Using top {percent}% by Rank -> {n_best} solutions.")
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
 
         # -------------------- labels --------------------------------------------
         parms_name_map = {
             'kfsr': r'$kf_{SR}\; (\mu\mathrm{M}^{-1}\,\mathrm{s}^{-1})$',
-<<<<<<< HEAD
             'krsr': r'$kr_{SR,\mathrm{NOSTIM}}\; (\mathrm{s}^{-1})$',
             
             'kfmm': r'$kf_{MM}\; (\mu\mathrm{M}^{-1}\,\mathrm{s}^{-1})$',
@@ -4146,19 +2304,6 @@ class Munc13:
             'Q0': r'$Q_{0}\; (\mathrm{copies}/\mu\mathrm{m}^{2})$',
             #A': r'$exp^{CA}\; $',
 
-=======
-            'krsr_nostim': r'$kr_{SR,\mathrm{NOSTIM}}\; (\mathrm{s}^{-1})$',
-            'krsr_stim': r'$kr_{SR,\mathrm{STIM}}\; (\mathrm{s}^{-1})$',
-            'kfmm': r'$kf_{MM}\; (\mu\mathrm{M}^{-1}\,\mathrm{s}^{-1})$',
-            'krmm': r'$kr_{MM}\; (\mathrm{s}^{-1})$',
-            'kfc_nostim': r'$kf_{C,\mathrm{NOSTIM}}\; (\mu\mathrm{M}^{-1}\,\mathrm{s}^{-1})$',
-            'kfc_stim': r'$kf_{C,\mathrm{STIM}}\; (\mu\mathrm{M}^{-1}\,\mathrm{s}^{-1})$',
-            'S0': r'$S_{0}\; (\mu\mathrm{M})$',
-            'R0': r'$R_{0}\; (\mathrm{copies}/\mu\mathrm{m}^{2})$',
-            'D1': r'$D_{1}\; (\mu\mathrm{m}^{2}/\mathrm{s})$',
-            'D1_over_D2': r'$D_{1} / D_{2}$',
-            'X': r'$X$'
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         }
 
         tiny = np.finfo(float).tiny
@@ -4179,11 +2324,7 @@ class Munc13:
         # ------------- range across the best `percent`% (light blue) ------------
         subset_ranges = {}
         for p in param_cols:
-<<<<<<< HEAD
             col = best_eDF[p].to_numpy(float)
-=======
-            col = best_df[p].to_numpy(float)
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
             col = col[np.isfinite(col) & (col > 0)]
             if col.size == 0:
                 v = max(float(best_row[p]), tiny)
@@ -4228,10 +2369,7 @@ class Munc13:
 
         # y-axis formatting (log)
         ax.set_yscale("log")
-<<<<<<< HEAD
         y_min = 1e-3
-=======
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         ax.set_ylim(y_min, y_max)
         ax.yaxis.set_major_locator(LogLocator(base=10.0, numticks=6))
         ax.yaxis.set_major_formatter(LogFormatterMathtext())
@@ -4263,7 +2401,6 @@ class Munc13:
         fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
         print(f"Saved summary to: {save_path}")
 
-<<<<<<< HEAD
     
     def plot_parameter_KD_summary(
         self,
@@ -4455,302 +2592,6 @@ DEFINE SOLVER CLASS FOR RUNNING THE OPTIMIZATION
 
 class Solver:
     def __init__(self, model, populationSize=500, NGEN=5, outfileName="../data/optimizedParms_clusterRun.txt"):
-=======
-    def plot_all_diffusion(self, figsize=(8, 7), fontsize=18, dpi=600):
-        from matplotlib.patches import Patch
-        from matplotlib.lines import Line2D
-
-        mutants = ['WT', r'$\Delta$C2A', 'shRNA RIM2', r'$\Delta$C2B']
-
-        # Data
-        D_exp_pre   = [self.D_exp_pre,   self.D_exp_DC2A_pre,   self.D_exp_shRIM_pre,   self.D_exp_DC2B_pre]
-        D_exp_post  = [self.D_exp_post,  self.D_exp_DC2A_post,  self.D_exp_shRIM_post,  self.D_exp_DC2B_post]
-        D_model_pre  = [self.D_model_pre,  self.D_model_DC2A_pre,  self.D_model_shRIM_pre,  self.D_model_DC2B_pre]
-        D_model_post = [self.D_model_post, self.D_model_DC2A_post, self.D_model_shRIM_post, self.D_model_DC2B_post]
-
-        D_exp_pre_sem  = [self.D_exp_pre_sem,  self.D_exp_DC2A_pre_sem,  self.D_exp_shRIM_pre_sem,  self.D_exp_DC2B_pre_sem]
-        D_exp_post_sem = [self.D_exp_post_sem, self.D_exp_DC2A_post_sem, self.D_exp_shRIM_post_sem, self.D_exp_DC2B_post_sem]
-
-        n = len(mutants)
-
-        # Layout: [Exp(NO), Exp(STIM)]   gap   [Model(NO), Model(STIM)]
-        bar_width   = 0.18
-        small_gap   = 0.10   # separation between Exp pair and Model pair
-        group_gap   = 0.60   # separation between mutant groups
-        group_width = 4*bar_width + small_gap
-
-        centers = np.arange(n) * (group_width + group_gap)
-        lefts = centers - group_width/2
-
-        x_exp_no   = lefts + 0*bar_width
-        x_exp_stim = lefts + 1*bar_width
-        x_mod_no   = lefts + 2*bar_width + small_gap
-        x_mod_stim = lefts + 3*bar_width + small_gap
-
-        fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
-
-        # Colors and styles
-        c_no, c_stim = 'black', 'red'
-        hatch_model = '///'
-
-        # EXP: solid fills (with error bars)
-        ax.bar(x_exp_no,   D_exp_pre,  width=bar_width, yerr=D_exp_pre_sem,  capsize=4,
-            color=c_no,   edgecolor='black', label='Exp (NO STIM)')
-        ax.bar(x_exp_stim, D_exp_post, width=bar_width, yerr=D_exp_post_sem, capsize=4,
-            color=c_stim, edgecolor='black', label='Exp (STIM)')
-
-        # MODEL: hatched (use white fill + colored edge so the hatch stands out)
-        ax.bar(x_mod_no,   D_model_pre,  width=bar_width,
-            facecolor='white', edgecolor=c_no,   hatch=hatch_model, label='Model (NO STIM)')
-        ax.bar(x_mod_stim, D_model_post, width=bar_width,
-            facecolor='white', edgecolor=c_stim, hatch=hatch_model, label='Model (STIM)')
-
-        # Axes/labels
-        ax.set_ylabel(r"$\mathrm{Average\ Diffusion}\ (\mu\mathrm{m}^2/\mathrm{s})$", fontsize=fontsize)
-        ax.set_xticks(centers)
-        ax.set_xticklabels(mutants, fontsize=fontsize)
-        ax.tick_params(axis='y', labelsize=fontsize * 0.8)
-        ax.set_ylim(bottom=0)
-
-        # Legend: show meaning of color and style separately (cleaner)
-        color_handles = [
-            Patch(facecolor=c_no,   edgecolor='black', label='NO STIM'),
-            Patch(facecolor=c_stim, edgecolor='black', label='STIM')
-        ]
-        style_handles = [
-            Patch(facecolor='black', edgecolor='black', label='Experiment'),
-            Patch(facecolor='white', edgecolor='black', hatch=hatch_model, label='Model')
-        ]
-
-        # Move legends above the plot
-        leg1 = ax.legend(
-            handles=color_handles,
-            fontsize=fontsize*0.75,
-            frameon=False,
-            loc='upper center',
-            bbox_to_anchor=(0.35, 1.15)  # left group
-        )
-        ax.add_artist(leg1)
-
-        ax.legend(
-            handles=style_handles,
-            fontsize=fontsize*0.75,
-            frameon=False,
-            loc='upper center',
-            bbox_to_anchor=(0.65, 1.15)  # right group
-        )
-
-        # Adjust layout to fit
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
-
-        # Cleanup
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        plt.show()
-
-    def save_individual_solution_figures_combined(self, output_dir="../fig/individual_figures", best=100, totalTime=10.0, dt=0.1, figsize=(16, 20), dpi=300):
-        os.makedirs(output_dir, exist_ok=True)
-        self.filter_and_store_solutions(best=best, totalTime=totalTime, dt=dt)
-
-        for idx, candidate_params in enumerate(self.filteredSolutions):
-            print(f"Generating combined figure for solution #{idx}")
-
-            fig, axes = plt.subplots(nrows=5, ncols=2, figsize=figsize, dpi=dpi)
-            axes = axes.flatten()
-
-            self._draw_plot_copies(candidate_params, axes[0])
-            self._draw_plot_kinetic(candidate_params, axes[1])
-            self._draw_plot_diffusion_comparison(candidate_params, axes[2])
-            self._draw_plot_diffusion_dilute_only(candidate_params, axes[3])
-            self._draw_plot_cluster_percentage_total(candidate_params, axes[4])
-            self._draw_plot_cluster_percentage_2D(candidate_params, axes[5])
-            self._draw_plot_DC2A(candidate_params, axes[6])
-            self._draw_plot_shRIM(candidate_params, axes[7])
-            self._draw_plot_lower_lipid_binding(candidate_params, axes[8])
-            self._draw_plot_lower_conc_munc13(candidate_params, axes[9])
-
-            fig.tight_layout()
-            fig.savefig(os.path.join(output_dir, f"solution_{idx:03d}.png"), bbox_inches="tight")
-            plt.close(fig)
-
-    def _draw_plot_copies(self, candidate_params, ax):
-        _, _, _, _, pre, post, preEq, postEq, _, _, _, _, _, _ = self.calculate_results(candidate_params)
-        ax.plot(self.timePoints, pre / self.Atotal, label='NO STIM')
-        ax.plot(self.timePoints, post / self.AtotalDense, label='STIM')
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel(r'Munc13$_{mem}$ (copies/$\mu$m$^2$)')
-        ax.set_title("Membrane Munc13")
-        ax.legend()
-
-    def _draw_plot_kinetic(self, candidate_params, ax):
-        _, _, preCluster, postCluster, _, _, preEq, postEq, _, _, _, _, _, _ = self.calculate_results(candidate_params)
-        ax.plot(self.timePoints, preCluster, label='NO STIM')
-        ax.plot(self.timePoints, postCluster, label='STIM')
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel('Munc13 in Cluster')
-        ax.set_title("Clustered Munc13 Kinetics")
-        ax.legend()
-
-    def _draw_plot_diffusion_comparison(self, candidate_params, ax):
-        _, _, _, _, d_pre, d_post = self.simulate(candidate_params)
-        model_mean = [d_pre, d_post]
-        model_sem = [0, 0]  # No SEM unless you're running replicates
-
-        exp_vals = [self.D_exp_pre, self.D_exp_post]
-        exp_sem = [self.D_exp_pre_sem, self.D_exp_post_sem]
-
-        categories = ["NO STIM", "STIM"]
-        x = np.arange(len(categories))
-        width = 0.35
-        fontsize = 12
-
-        ax.bar(x - width/2, exp_vals, width, yerr=exp_sem, capsize=5,
-            label="Experiment", color='red', alpha=0.8)
-        ax.bar(x + width/2, model_mean, width, capsize=5,
-            label="Model", color='blue', alpha=0.8)
-
-        ax.set_xticks(x)
-        ax.set_xticklabels(categories, fontsize=fontsize)
-        ax.set_ylabel(r"$\mathrm{Average\ Diffusion}\ (\mu\mathrm{m}^2/\mathrm{s})$", fontsize=fontsize)
-        ax.set_title("Average Diffusion: Sim vs Exp")
-        ax.legend(fontsize=fontsize, loc='best')
-
-    def _draw_plot_diffusion_dilute_only(self, candidate_params, ax):
-        D1 = candidate_params[9]
-        D2 = D1 / candidate_params[10]
-        solutionPre, solutionPost, _, _, _, _ = self.simulate(candidate_params)
-        D_dilute_pre = self.calc_diffusion_dilute(D1, D2, solutionPre)
-        D_dilute_post = self.calc_diffusion_dilute(D1, D2, solutionPost)
-
-        ax.bar([0, 1], [D_dilute_pre, D_dilute_post],
-            tick_label=["NO STIM", "STIM"], color='skyblue')
-        ax.set_ylabel("Dilute Diffusion (µm²/s)")
-        ax.set_title("Dilute Diffusion")
-
-    def _draw_plot_cluster_percentage_total(self, candidate_params, ax):
-        solutionPre, solutionPost, _, _, _, _ = self.simulate(candidate_params)
-        perc_cluster_pre = self.calc_percentages_cluster(solutionPre)
-        perc_cluster_post = self.calc_percentages_cluster(solutionPost)
-
-        ax.bar([0, 1], [perc_cluster_pre, perc_cluster_post],
-            tick_label=["NO STIM", "STIM"], color='salmon')
-        ax.set_ylabel("Clustered % (Total)")
-        ax.set_title("Total Clustered Percentage")
-
-    def _draw_plot_cluster_percentage_2D(self, candidate_params, ax):
-        solutionPre, solutionPost, _, _, _, _ = self.simulate(candidate_params)
-        _, perc_cluster_pre_2D = self.calc_3D_2D_percentages_cluster(solutionPre)
-        _, perc_cluster_post_2D = self.calc_3D_2D_percentages_cluster(solutionPost)
-
-        ax.bar([0, 1], [perc_cluster_pre_2D, perc_cluster_post_2D],
-            tick_label=["NO STIM", "STIM"], color='lightgreen')
-        ax.set_ylabel("Clustered % (2D only)")
-        ax.set_title("2D Clustered Percentage")
-
-    def _draw_plot_DC2A(self, candidate_params, ax):
-        candidate = list(candidate_params)
-        c3 = candidate[3]
-        candidate[3] = 0
-        _, _, _, _, d_pre, d_post = self.simulate(candidate)
-        candidate[3] = c3
-
-        model_mean = [d_pre, d_post]
-        model_sem = [0, 0]
-
-        exp_vals = [self.D_exp_DC2A_pre, self.D_exp_DC2A_post]
-        exp_sem = [self.D_exp_DC2A_pre_sem, self.D_exp_DC2A_post_sem]
-
-        categories = ["NO STIM", "STIM"]
-        x = np.arange(len(categories))
-        width = 0.35
-        fontsize = 12
-
-        ax.bar(x - width/2, exp_vals, width, yerr=exp_sem, capsize=5,
-            label="Experiment", color='red', alpha=0.8)
-        ax.bar(x + width/2, model_mean, width, capsize=5,
-            label="Model", color='purple', alpha=0.8)
-
-        ax.set_xticks(x)
-        ax.set_xticklabels(categories, fontsize=fontsize)
-        ax.set_ylabel(r"$\mathrm{Average\ Diffusion}\ (\mu\mathrm{m}^2/\mathrm{s})$", fontsize=fontsize)
-        ax.set_title("DC2A Diffusion")
-        ax.legend(fontsize=fontsize, loc='best')
-
-    def _draw_plot_shRIM(self, candidate_params, ax):
-        candidate = list(candidate_params)
-        c3 = candidate[3]
-        candidate[3] *= 2
-        _, _, _, _, d_pre, d_post = self.simulate(candidate)
-        candidate[3] = c3
-
-        model_mean = [d_pre, d_post]
-        model_sem = [0, 0]
-
-        exp_vals = [self.D_exp_shRIM_pre, self.D_exp_shRIM_post]
-        exp_sem = [self.D_exp_shRIM_pre_sem, self.D_exp_shRIM_post_sem]
-
-        categories = ["NO STIM", "STIM"]
-        x = np.arange(len(categories))
-        width = 0.35
-        fontsize = 12
-
-        ax.bar(x - width/2, exp_vals, width, yerr=exp_sem, capsize=5,
-            label="Experiment", color='red', alpha=0.8)
-        ax.bar(x + width/2, model_mean, width, capsize=5,
-            label="Model", color='orange', alpha=0.8)
-
-        ax.set_xticks(x)
-        ax.set_xticklabels(categories, fontsize=fontsize)
-        ax.set_ylabel(r"$\mathrm{Average\ Diffusion}\ (\mu\mathrm{m}^2/\mathrm{s})$", fontsize=fontsize)
-        ax.set_title("shRIM Diffusion")
-        ax.legend(fontsize=fontsize, loc='best')
-
-    def _draw_plot_lower_lipid_binding(self, candidate_params, ax):
-        candidate = list(candidate_params)
-        c0 = candidate[0]
-        candidate[0] *= 0.5
-        _, _, _, _, d_pre, d_post = self.simulate(candidate)
-        candidate[0] = c0
-
-        model_mean = [d_pre, d_post]
-        model_sem = [0, 0]
-
-        if d_pre > d_post:
-            print("lower lipid binding d_pre > d_post")
-            print(candidate)
-
-        exp_vals = [self.D_exp_DC2B_pre, self.D_exp_DC2B_post]
-        exp_sem = [self.D_exp_DC2B_pre_sem, self.D_exp_DC2B_post_sem]
-
-        categories = ["NO STIM", "STIM"]
-        x = np.arange(len(categories))
-        width = 0.35
-        fontsize = 12
-
-        ax.bar(x - width/2, exp_vals, width, yerr=exp_sem, capsize=5,
-            label="Experiment", color='red', alpha=0.8)
-        ax.bar(x + width/2, model_mean, width, capsize=5,
-            label="Model", color='green', alpha=0.8)
-
-        ax.set_xticks(x)
-        ax.set_xticklabels(categories, fontsize=fontsize)
-        ax.set_ylabel(r"$\mathrm{Average\ Diffusion}\ (\mu\mathrm{m}^2/\mathrm{s})$", fontsize=fontsize)
-        ax.set_title("Lower Lipid Binding (DC2B)")
-        ax.legend(fontsize=fontsize, loc='best')
-
-    def _draw_plot_lower_conc_munc13(self, candidate_params, ax):
-        candidate = list(candidate_params)
-        c7 = candidate[7]
-        candidate[7] *= 0.1  # reduce Munc13 initial conc
-        _, _, _, _, d_pre, d_post = self.simulate(candidate)
-        ax.bar([0, 1], [d_pre, d_post], tick_label=["NO STIM", "STIM"], color='gray')
-        ax.set_title("Lower Munc13 Concentration")
-        candidate[7] = c7
-
-
-class Solver:
-    def __init__(self, model, populationSize=100, NGEN=100):
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         """
         Sets up a DEAP-based Genetic Algorithm to optimize parameters for Munc13 model.
         :param model: A Munc13 model instance
@@ -4760,13 +2601,8 @@ class Solver:
         self.model = model
         self.populationSize = populationSize
         self.NGEN = NGEN
-<<<<<<< HEAD
         self.indpb = 0.85  # Probability of mutation per gene
         self.outfileName = outfileName
-=======
-        self.indpb = 0.05  # Probability of mutation per gene
-
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         # Create DEAP classes
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
         creator.create("Candidate", list, fitness=creator.FitnessMax)
@@ -4778,20 +2614,12 @@ class Solver:
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.candidate)
         # Genetic operators
         self.toolbox.register("mate", tools.cxTwoPoint)
-<<<<<<< HEAD
         self.toolbox.register("mutate", self.mutateCandidate, indpb=self.indpb, mult=0.5)
-=======
-        self.toolbox.register("mutate", self.mutateCandidate, indpb=self.indpb, mult=1.0)
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         self.toolbox.register("select", tools.selRoulette)
 
         # Register the main evaluation function with DEAP
         # (We only pick one from model.modes if you have multiple)
-<<<<<<< HEAD
         self.toolbox.register("evaluate", self.model.fitness_function_to_call)
-=======
-        self.toolbox.register("evaluate", self.model.eval_both)
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
 
         # Create a multiprocessing pool for parallel fitness evaluation
         self.pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
@@ -4850,21 +2678,14 @@ class Solver:
             offspring = algorithms.varAnd(population, self.toolbox, cxpb=0.8, mutpb=0.2) #0.8, 0.02
             # Evaluate in parallel
             fits = list(self.toolbox.map(self.toolbox.evaluate, offspring))
-<<<<<<< HEAD
             print("fitness: ",fits[0])
             print("candidate: ",offspring[0])
-=======
-
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
             for fit_val, ind in zip(fits, offspring):
                 cost, = fit_val
                 ind.fitness.values = (cost,)
 
                 # Check viability
-<<<<<<< HEAD
                 #print("cost: ", cost)
-=======
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
                 if cost >= self.model.threshold:
                     # Store if not already in the set
                     if ind not in all_viable_points:
@@ -4874,11 +2695,7 @@ class Solver:
             # Selection step
             population = self.toolbox.select(offspring, k=len(population))
 
-<<<<<<< HEAD
             if gen % 2 == 0:
-=======
-            if gen % 20 == 0:
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
                 print(f"=== Generation {gen} ===")
                 print(f"Number of viable points so far: {len(all_viable_points)}")
 
@@ -4888,13 +2705,9 @@ class Solver:
         """
         Sort viable solutions by fitness, write the top solutions to a file.
         """
-<<<<<<< HEAD
         #outfile = "../data/optimizedParms_clusterRun.txt"
 
         outfile = self.outfileName
-=======
-        outfile = "../data/optimizedParms.txt"
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
         print(f"Writing results to {outfile}")
 
         # Prepare arrays for sorting
@@ -4907,17 +2720,12 @@ class Solver:
         with open(outfile, "w") as f:
             # CSV header
             header = (
-<<<<<<< HEAD
                 "Rank, Fitness, kfsr, krsr, kfmm, krmm, kfmx, krmx, kfc, krc, kfq, krq, eLoop, eDF, kfdd, Sd, stimUpSR, S0, R0, X0, Q0\n"
-=======
-                "Rank, Fitness, kfsr, krsr_nostim, krsr_stim, kfmm, krmm, kfc_nostim, kfc_stim, S0, R0, D1, D1_over_D2, X\n"
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
             )
             f.write(header)
 
             for rank, idx in enumerate(idx_sorted):
                 fitness_val = fit_values[idx]
-<<<<<<< HEAD
                 opt_params = viablePoints[idx]
 
                 # Unpack your optimized parameters in the known order
@@ -4946,28 +2754,10 @@ class Solver:
                 Q0 = opt_params[18]
                 Sd = opt_params[13]
                 
-=======
-                params = viablePoints[idx]
-
-                # Unpack your parameters in the known order
-                kfsr = params[0]
-                krsr_nostim = params[1]
-                krsr_stim = params[2]
-                kfmm = params[3]
-                krmm = params[4]
-                kfc_nostim = params[5]
-                kfc_stim = params[6]
-                S0 = params[7]
-                R0 = params[8]
-                D1 = params[9]
-                D1_over_D2 = params[10]
-                X = params[11]
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
 
                 # Write a line per solution
                 f.write(
                     f"{rank}, {fitness_val:.4f}, "
-<<<<<<< HEAD
                     f"{kfsr:.5g}, {krsr:.5g}, {kfmm:.5g}, "
                     f"{krmm:.5g}, {kfmx:.5g}, {krmx:.5g}, "
                     f"{kfc:.5g}, {krc:.5g}, {kfq:.5g}, "
@@ -4976,12 +2766,6 @@ class Solver:
                     f"{S0:.5g}, {R0:.5g}, {X0:.5g},{Q0:.5g}\n"
                 )
                 
-=======
-                    f"{kfsr:.5g}, {krsr_nostim:.5g}, {krsr_stim:.5g}, {kfmm:.5g}, "
-                    f"{krmm:.5g}, {kfc_nostim:.5g}, {kfc_stim:.5g}, {S0:.5g}, "
-                    f"{R0:.5g}, {D1:.5g}, {D1_over_D2:.5g}, {X:.5g}\n"
-                )
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
 
         print("Finished writing parameter file.")
 
@@ -5001,7 +2785,6 @@ class Solver:
         print("Done with all GA generations and file writing.")
         return viablePoints, viableFitness
     
-<<<<<<< HEAD
 #this is the main function to run the GA on the model defined below.
 # It produces as output the file named by default ../data/optimizedParms_clusterRun.txt
 #this is written to in the function write_sortedParms in the Solver class
@@ -5076,43 +2859,6 @@ if __name__ == "__main__":
     #    model.plot_mycluster_time(y1, figsize=(8,6), dpi=300)
 
     
-=======
-
-if __name__ == "__main__":
-    start_time = time.time()
-    # Parameter definitions
-    parameter_ranges = {
-        "kfsr":      {"min": 0.001, "max": 10},   # kfSR
-        "krsr_nostim":      {"min": 0.1,   "max": 1000}, # krSR_nostim
-        "krsr_stim":       {"min": 0.1,   "max": 1000}, # krSR_stim
-        "kfmm":      {"min": 0.001, "max": 10},   # kfMM
-        "krmm":      {"min": 0.01,   "max": 100}, # krMM
-        "kfc_nostim":      {"min": 0.001, "max": 10},   # kfc_nostim
-        "kfc_stim":      {"min": 0.001, "max": 10},   # kfc_stim
-        "S0":        {"min": 0.01, "max": 10},   # S0
-        "R0":        {"min": 100, "max": 500},   # R0
-        "D1":        {"min": 0.05,   "max": 5}, # D1
-        "D1_over_D2":        {"min": 1.5,   "max": 5}, # D2
-        "X":        {"min": 10,   "max": 10}, # X
-    }
-
-    # Order in which the solver will read parameters from a candidate
-    params_to_optimize = np.array([
-        "kfsr","krsr_nostim","krsr_stim","kfmm","krmm","kfc_nostim","kfc_stim","S0","R0","D1","D1_over_D2","X"
-    ])
-
-    # GA settings
-    popSize = 500
-    nGen = 500
-
-    # Instantiate the model and solver
-    model = Munc13(parameter_ranges, params_to_optimize, t_max_pre=50)
-    solver = Solver(model, populationSize=popSize, NGEN=nGen)
-
-    # Run the GA
-    viablePoints, viableFitness = solver.run()
-
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
     # Print top solution info
     if len(viableFitness) > 0:
         best_fit = max(viableFitness, key=lambda x: x[0])
@@ -5123,8 +2869,4 @@ if __name__ == "__main__":
     end_time = time.time()
     elapsed_time = end_time - start_time
     elapsed_time_minutes = elapsed_time / 60
-<<<<<<< HEAD
     print(f"Total execution time: {elapsed_time_minutes:.2f} minutes")
-=======
-    print(f"Total execution time: {elapsed_time_minutes:.2f} minutes")
->>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
