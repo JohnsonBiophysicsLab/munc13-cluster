@@ -1,0 +1,32 @@
+def ode(self, y, t, params):
+	# y[0] = M
+	# y[1] = MM
+	# y[2] = R
+	# y[3] = MR
+	# y[4] = C
+	# y[5] = MC
+	# y[6] = MMC
+	# y[7] = MMR
+	# y[8] = MRC
+	# y[9] = MMRC
+	kf0 = params[0]
+	kr0 = params[1]
+	kf2 = params[2]
+	kr2 = params[3]
+	kf1 = params[4]
+	kf3 = params[5]
+	kr3 = params[6]
+	gamma = params[7]
+	dylist = []
+	dylist.append(-kf0*y[0]*y[0]+kr0*y[1]-kf0*y[0]*y[0]+kr0*y[1]-kf2*y[0]*y[2]+kr2*y[3]-kf1*y[0]*y[4]-kf3*y[0]*y[5]+kr3*y[5]**2-kf0*y[0]*y[5]+kr0*y[6]-2*kf3*y[0]*y[6]+kr3*y[6]*y[5]-kf0*y[0]*y[3]+kr0*y[7]-kf3*y[0]*y[8]+kr3*y[8]*y[5]-kf0*y[0]*y[8]+kr0*y[9]-2*kf3*y[0]*y[9]+kr3*y[9]*y[5])
+	dylist.append(+kf0*y[0]*y[0]-kr0*y[1]-2*kf2*y[2]*y[1]+kr2*y[7]-2*kf1*y[4]*y[1]-kf3*y[1]*y[5]+kr3*y[5]*y[6]-kf3*y[1]*y[8]+kr3*y[8]*y[6]-2*kf3*y[1]*y[6]+kr3*y[6]**2-2*kf3*y[1]*y[9]+kr3*y[9]*y[6])
+	dylist.append(-kf2*y[0]*y[2]+kr2*y[3]-2*kf2*y[2]*y[1]+kr2*y[7]-gamma*kf2*y[2]*y[5]+kr2*y[8]-gamma*kf2*y[2]*y[6]+kr2*y[9])
+	dylist.append(+kf2*y[0]*y[2]-kr2*y[3]-kf0*y[0]*y[3]+kr0*y[7]-gamma*kf1*y[4]*y[3]-gamma*kf3*y[3]*y[5]+kr3*y[5]*y[8]-2*gamma*kf3*y[3]*y[6]+kr3*y[6]*y[8]-gamma*kf3*y[3]*y[8]+kr3*y[8]**2-2*gamma*kf3*y[3]*y[9]+kr3*y[9]*y[8])
+	dylist.append(-kf1*y[0]*y[4]-2*kf1*y[4]*y[1]-gamma*kf1*y[4]*y[3]-gamma*kf1*y[4]*y[7])
+	dylist.append(+kf1*y[0]*y[4]-kf3*y[0]*y[5]+kr3*y[5]**2+kf3*2*y[0]*y[5]-kr3*2*y[5]**2-kf0*y[0]*y[5]+kr0*y[6]+2*kf3*y[0]*y[6]-kr3*y[6]*y[5]+kf3*y[0]*y[8]-kr3*y[8]*y[5]+2*kf3*y[0]*y[9]-kr3*y[9]*y[5]-gamma*kf2*y[2]*y[5]+kr2*y[8]-kf3*y[1]*y[5]+kr3*y[5]*y[6]+kf3*y[1]*y[5]-kr3*y[5]*y[6]-gamma*kf3*y[3]*y[5]+kr3*y[5]*y[8]+gamma*kf3*y[3]*y[5]-kr3*y[5]*y[8]-gamma*kf3*y[5]*y[7]+kr3*y[5]*y[9]+gamma*kf3*y[5]*y[7]-kr3*y[5]*y[9])
+	dylist.append(+kf0*y[0]*y[5]-kr0*y[6]-2*kf3*y[0]*y[6]+kr3*y[6]*y[5]+2*kf3*y[0]*y[6]-kr3*y[6]*y[5]-gamma*kf2*y[2]*y[6]+kr2*y[9]+2*kf1*y[4]*y[1]+kf3*y[1]*y[5]-kr3*y[5]*y[6]+kf3*y[1]*y[8]-kr3*y[8]*y[6]-2*kf3*y[1]*y[6]+kr3*y[6]**2+2*kf3*2*y[1]*y[6]-kr3*2*y[6]**2+2*kf3*y[1]*y[9]-kr3*y[9]*y[6]-2*gamma*kf3*y[3]*y[6]+kr3*y[6]*y[8]+2*gamma*kf3*y[3]*y[6]-kr3*y[6]*y[8]-2*gamma*kf3*y[6]*y[7]+kr3*y[6]*y[9]+2*gamma*kf3*y[6]*y[7]-kr3*y[6]*y[9])
+	dylist.append(+kf0*y[0]*y[3]-kr0*y[7]+2*kf2*y[2]*y[1]-kr2*y[7]-gamma*kf1*y[4]*y[7]-gamma*kf3*y[5]*y[7]+kr3*y[5]*y[9]-2*gamma*kf3*y[6]*y[7]+kr3*y[6]*y[9]-gamma*kf3*y[7]*y[8]+kr3*y[8]*y[9]-2*gamma*kf3*y[7]*y[9]+kr3*y[9]**2)
+	dylist.append(-kf3*y[0]*y[8]+kr3*y[8]*y[5]+kf3*y[0]*y[8]-kr3*y[8]*y[5]-kf0*y[0]*y[8]+kr0*y[9]+gamma*kf2*y[2]*y[5]-kr2*y[8]+gamma*kf1*y[4]*y[3]-kf3*y[1]*y[8]+kr3*y[8]*y[6]+kf3*y[1]*y[8]-kr3*y[8]*y[6]+gamma*kf3*y[3]*y[5]-kr3*y[5]*y[8]+2*gamma*kf3*y[3]*y[6]-kr3*y[6]*y[8]-gamma*kf3*y[3]*y[8]+kr3*y[8]**2+gamma*kf3*2*y[3]*y[8]-kr3*2*y[8]**2+2*gamma*kf3*y[3]*y[9]-kr3*y[9]*y[8]-gamma*kf3*y[7]*y[8]+kr3*y[8]*y[9]+gamma*kf3*y[7]*y[8]-kr3*y[8]*y[9])
+	dylist.append(+kf0*y[0]*y[8]-kr0*y[9]-2*kf3*y[0]*y[9]+kr3*y[9]*y[5]+2*kf3*y[0]*y[9]-kr3*y[9]*y[5]+gamma*kf2*y[2]*y[6]-kr2*y[9]+gamma*kf1*y[4]*y[7]-2*kf3*y[1]*y[9]+kr3*y[9]*y[6]+2*kf3*y[1]*y[9]-kr3*y[9]*y[6]-2*gamma*kf3*y[3]*y[9]+kr3*y[9]*y[8]+2*gamma*kf3*y[3]*y[9]-kr3*y[9]*y[8]+gamma*kf3*y[5]*y[7]-kr3*y[5]*y[9]+2*gamma*kf3*y[6]*y[7]-kr3*y[6]*y[9]+gamma*kf3*y[7]*y[8]-kr3*y[8]*y[9]-2*gamma*kf3*y[7]*y[9]+kr3*y[9]**2+2*gamma*kf3*2*y[7]*y[9]-kr3*2*y[9]**2)
+	return np.array(dylist)
+

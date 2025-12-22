@@ -1,0 +1,17 @@
+<<<<<<< HEAD
+name: optimization_env_munc
+=======
+name: optimization_env
+>>>>>>> e9c30dce5ef210cfa842cb409bed58758cc600ea
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - seaborn
+  - deap
+  - pip

@@ -1,0 +1,17 @@
+def ode(self, y, t, params):
+	# y[0] = S
+	# y[1] = R
+	# y[2] = M
+	# y[3] = D
+	kfsr = params[0]
+	krsr = params[1]
+	gamma = params[2]
+	kfmm = params[3]
+	krmm = params[4]
+	dylist = []
+	dylist.append(-kfsr*y[0]*y[1]+krsr*y[2])
+	dylist.append(-kfsr*y[0]*y[1]+krsr*y[2])
+	dylist.append(+kfsr*y[0]*y[1]-krsr*y[2]-gamma*kfmm*y[2]*y[2]+krmm*y[3]-gamma*kfmm*y[2]*y[2]+krmm*y[3])
+	dylist.append(+gamma*kfmm*y[2]*y[2]-krmm*y[3])
+	return np.array(dylist)
+

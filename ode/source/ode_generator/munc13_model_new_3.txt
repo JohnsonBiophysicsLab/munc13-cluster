@@ -1,0 +1,28 @@
+def ode(self, y, t, params):
+	# y[0] = S
+	# y[1] = R
+	# y[2] = M
+	# y[3] = D
+	# y[4] = X
+	# y[5] = W
+	# y[6] = Y
+	# y[7] = C
+	# y[8] = Z
+	kfsr = params[0]
+	krsr = params[1]
+	gamma = params[2]
+	kfmm = params[3]
+	krmm = params[4]
+	kfc = params[5]
+	dylist = []
+	dylist.append(-kfsr*y[0]*y[1]+krsr*y[2]-kfc*y[0]*y[4]-kfc*y[0]*y[6]-kfc*y[0]*y[8])
+	dylist.append(-kfsr*y[0]*y[1]+krsr*y[2])
+	dylist.append(+kfsr*y[0]*y[1]-krsr*y[2]-gamma*kfmm*y[2]*y[2]+krmm*y[3]-gamma*kfmm*y[2]*y[2]+krmm*y[3]-gamma*kfc*y[2]*y[4]-gamma*kfc*y[2]*y[6]-gamma*kfc*y[2]*y[8])
+	dylist.append(+gamma*kfmm*y[2]*y[2]-krmm*y[3]-2*gamma*kfc*y[3]*y[4]-2*gamma*kfc*y[3]*y[6]-2*gamma*kfc*y[3]*y[8])
+	dylist.append(-kfc*y[0]*y[4]-gamma*kfc*y[2]*y[4]-2*gamma*kfc*y[3]*y[4]-2*gamma*kfc*1*y[3]*y[4])
+	dylist.append(+kfc*y[0]*y[4]+kfc*y[0]*y[6]+kfc*y[0]*y[8])
+	dylist.append(+kfc*y[0]*y[4]+gamma*kfc*y[2]*y[4]+2*gamma*kfc*y[3]*y[4]+2*gamma*kfc*y[3]*y[4]-kfc*y[0]*y[6]-gamma*kfc*y[2]*y[6]-2*gamma*kfc*y[3]*y[6]-2*gamma*kfc*1*y[3]*y[6])
+	dylist.append(+gamma*kfc*y[2]*y[4]+2*gamma*kfc*y[3]*y[4]+2*gamma*kfc*y[3]*y[4]+gamma*kfc*y[2]*y[6]+2*gamma*kfc*y[3]*y[6]+2*gamma*kfc*y[3]*y[6]+gamma*kfc*y[2]*y[8]+2*gamma*kfc*y[3]*y[8]+2*gamma*kfc*y[3]*y[8])
+	dylist.append(+kfc*y[0]*y[6]+gamma*kfc*y[2]*y[6]+2*gamma*kfc*y[3]*y[6]+2*gamma*kfc*y[3]*y[6]-kfc*y[0]*y[8]-gamma*kfc*y[2]*y[8]-2*gamma*kfc*y[3]*y[8]-2*gamma*kfc*1*y[3]*y[8])
+	return np.array(dylist)
+
