@@ -71,10 +71,19 @@ class Munc13:
         self.density_c2a_post = 0.58*10/320
         self.recruitmentStimC2A = 256318/86340
 
+        self.density_c2c_pre = 1.5*10/320
+        self.density_c2c_post = 3.1*10/320
+        
         self.DtM = 0.08 #um2/s
         self.DtX = 0.001 #um2/s
         self.DtD = 0.025 #um2/s twice as slow as DM.
         self.DtQ = 0.08 #um2/s
+
+        #lifetimes
+        self.wt_lifetime = 10 #s
+        self.wt_lifetime_stim = 10 #s
+        self.c2a_lifetime = 10 #s
+        self.c2a_lifetime_stim = 10 #s
 
         # diffusion constants
         self.D_exp_pre = 0.04255
@@ -519,7 +528,7 @@ class Munc13:
             
     
         
-        costSum=0
+        costSum=0.0
         #we may need to add in a term to the cost function to select
         #against a high density of sub-clusters on the membrane,
         #that would be all species with say 3-6 munc13.
@@ -528,11 +537,13 @@ class Munc13:
         weightSmallClust=weights['wSmallClust'] #this is the inverse of the target maximums
         
         #if we want small clusters to be <1e-4, set the weight to 1e4
-        print(f"Small cluster density chi: Simulated {smallClusterDens[-1]}, high density {density[-1]}, Chi {chiSmallClust}")
+        
+        #print(f"Small cluster density chi: Simulated {smallClusterDens[-1]}, high density {density[-1]}, Chi {chiSmallClust}")
         #calculate the percent of munc13 on the membrane that is in clusters.
         percClusterTotal, percClustMem, percMem, pMono, pDimer, pMX, pDX=self.calc_percentages_cluster(Y)
-        print(f"Percent of mem munc13 in clusters: {percClustMem*100}%. Percent munc13 on the membrane: {percMem*100}%. Monomer mem: {pMono*100}%. Dimer mem: {pDimer*100}%")
-        print(f"Percent of memMunc in MX {pMX*100}%, Percent in DX {pDX*100}%")
+        
+        #print(f"Percent of mem munc13 in clusters: {percClustMem*100}%. Percent munc13 on the membrane: {percMem*100}%. Monomer mem: {pMono*100}%. Dimer mem: {pDimer*100}%")
+        #print(f"Percent of memMunc in MX {pMX*100}%, Percent in DX {pDX*100}%")
         #implement a relu penalty if percent in clusters is greater than 40%
         weightPerc = weights['wPercClust']
         upperLimit = 0.4 #penalize fraction of munc13 in clusters above this.
@@ -550,12 +561,15 @@ class Munc13:
 
         
         weightChiSS = weights['wChiSS']
-        print(f"Change in density over last 25%: {ssDelta}, associated chi: {chiSS*weightChiSS}")
+        
+        #print(f"Change in density over last 25%: {ssDelta}, associated chi: {chiSS*weightChiSS}")
 
         costSum=chiDens[0]+weightSmallClust*chiSmallClust +weightPerc*chiPercClust+\
             chiSS*weightChiSS+chiDimer*weightDimer # this is already negative
         
-        return [costSum, density[-1]]
+        #for some reason, costSum is a pandas series, so is not a python float.
+
+        return [costSum.iloc[0], density[-1]]
 
 
     def calculate_cluster_density(self,Y):
@@ -577,7 +591,7 @@ class Munc13:
     def pie_charts(self, sol, solPost, figsize, fileStr):
         # plot two pie charts side by side
         fig, ax = plt.subplots(1, 2, figsize=figsize)
-        fontsize= 10
+        fontsize= 14
         dpi=300
         labels = ['M', 'D', 'C']#,'SC','MX']
         #reads in the full array
@@ -585,24 +599,34 @@ class Munc13:
         smallClusterDens, smallS=self.calculate_small_cluster_density(sol)
         memCopies=self.calculate_munc13_on_membrane(sol[:,-1]*self.cellVolume*602.0)
         percX=pMX+pDX
+        colors_pre = ['#ff9999',"#2270bd","#d3d3d3"]
         sizes_pre = [pMono, pDimer, percClustMem]#, smallS[-1]*self.cellArea/memCopies, percX]
         print('sizes pre stim, and sum: ', sizes_pre)
+        if pDimer <1e-6:
+            sizes_pre = [pMono, percClustMem]
+            colors_pre = ['#ff9999',"#d3d3d3"]
+
         #Now perform the same calculations for the post-stim
         percClusterTotal, percClustMem, percMem, pMono, pDimer, pMX, pDX=self.calc_percentages_cluster(solPost)
         smallClusterDens, smallS=self.calculate_small_cluster_density(solPost)
         memCopies=self.calculate_munc13_on_membrane(solPost[:,-1]*self.cellVolume*602.0)
         percX=pMX+pDX
         sizes_post = [pMono, pDimer, percClustMem]#, smallS[-1]*self.cellArea/memCopies, percX]
-        print('sizes POST stim, and sum: ', sizes_post)
-
+        
+        colors_post = ['#ff9999',"#2270bd","#d3d3d3"]
+        if pDimer <1e-6:
+            sizes_post = [pMono, percClustMem]
+            colors_post = ['#ff9999',"#d3d3d3"]
 
         
-        colors = ['#ff9999',"#2270bd","#0d0e0d"]#, "#31f7f7", "#f7ed30"]
+        print('sizes POST stim, and sum: ', sizes_post)
+
+        
         #explode = (0.05, 0.05, 0.05,0.05, 0.05)  # explode all slices slightly
-        wedges1, texts1, autotexts1 = ax[0].pie(sizes_pre,  labels=labels, colors=colors,
-                 startangle=140,autopct='%1.1f%%', textprops={'fontsize': fontsize * 0.8})
-        wedges2, texts2, autotexts2 = ax[1].pie(sizes_post,  labels=labels, colors=colors,
-               startangle=140, autopct='%1.1f%%', textprops={'fontsize': fontsize * 0.8})
+        wedges1, texts1, autotexts1 = ax[0].pie(sizes_pre,   colors=colors_pre,
+                 startangle=140,autopct='%1.1f%%', textprops={'fontsize': fontsize })
+        wedges2, texts2, autotexts2 = ax[1].pie(sizes_post,   colors=colors_post,
+               startangle=140, autopct='%1.1f%%', textprops={'fontsize': fontsize})
         # draw circle for donut shape
         #centre_circle0 = plt.Circle((0,0), 0.70, fc='white')
         #centre_circle1 = plt.Circle((0,0), 0.70, fc='white')
@@ -653,7 +677,8 @@ class Munc13:
         weight1 = 5.0 / (expDens ** 2)
        
         sum_diff = weight1 * diff1 
-        print(f"Cluster density chi: Simulated {simDens}, Experimental {expDens}, Chi { -sum_diff}")
+        
+        #print(f"Cluster density chi: Simulated {simDens}, Experimental {expDens}, Chi { -sum_diff}")
         #we want to maximize the fitness, so return the negative value.
         return [-sum_diff]
 
@@ -683,12 +708,24 @@ class Munc13:
         # Weight prefactors to normalize the terms
         # Normalize by the square of expected values to make terms dimensionless and comparable
         weight = 10.0 / (observedStim ** 2)
-        sum_diff=np.array(1)
-        sum_diff = weight * diff1
-        print(f"Recruitment copies pre {memCopyMuncPre}, and copies post {memCopyMuncPost}")
+        
+        sum_diff = -weight * diff1
+        
+        #print(f"Recruitment copies pre {memCopyMuncPre}, and copies post {memCopyMuncPost}")
 
-        print(f"Recruitment upon stimulation, sim value {recruitStim}, exp value {observedStim}, chi: Chi {-sum_diff}")
-        return [-sum_diff]
+        #print(f"Recruitment upon stimulation, sim value {recruitStim}, exp value {observedStim}, chi: Chi {sum_diff}")
+        #force it to a python float type.
+        return float(sum_diff)
+
+    def cost_lifetime(self, tauSim, tauExp):
+        
+        # Calculate differences just for the last point.
+        diff1 = (tauSim - tauExp) ** 2
+        weight = -1.0 / (tauExp ** 2)
+        #chi is the negative squared difference, normalized by the squared exp value.
+        chi = float(weight*diff1)
+        
+        return chi
 
     def isViableFitness(self, fit):
         return fit >= self.threshold
@@ -706,7 +743,7 @@ class Munc13:
     def fitness_function_to_call(self, candidate):
         #use this more general function so you can change the evaluation function
         #easily
-        fitness = np.array(1)
+        fitness = 0.0
         #fitness=self.eval_stimOnly(candidate)
         fitness = self.eval_clusterModel_withD(candidate)    
         return fitness
@@ -754,8 +791,6 @@ class Munc13:
         chiRecruitStim= self.costChi_recruitmentStim(solutionPre,solutionPost, self.recruitmentStim)
         
        
-        chiTotal=np.array(1)
-        
         chiTotal = chiPre + chiPost+ chiRecruitStim[0]
 
         
@@ -841,11 +876,14 @@ class Munc13:
         tau46, tau56 = self.calculate_lifetime_of_clusters(solutionPre, candidate)
         #print(f"Cluster lifetimes: tau46 {tau46}, tau56 {tau56}")
         #we want tau56 to be at least 10 seconds and less than 50
-        upperBound = 20
-        lowerBound = 5
-        chiLifetime = -1*max(0,lowerBound - tau56) -1*max(0,tau56 - upperBound)
+        #upperBound = 12
+        #lowerBound = 8
+        #Change chiLifetime to a -chi2 term term
+        #chiLifetime = -1*max(0,lowerBound - tau56) -1*max(0,tau56 - upperBound)
+        chiLifetime = self.cost_lifetime(tau56, self.wt_lifetime)
+        
         chiPre=chiPre+chiLifetime
-
+        
         # Chi from post
         #print("**CHI POST STIMULATION")
         chiPost, endDensityPost = self.costChi_cluster(solutionPost, self.density_exp_post, candidate[2], weightVector)
@@ -855,8 +893,9 @@ class Munc13:
         #print(f"Cluster lifetimes: tau46 {tau46}, tau56 {tau56}")
         #we want tau56 to be at least 10 seconds and less than 50
     
-        chiLifetime = -1*max(0,lowerBound - tau56) -1*max(0,tau56 - upperBound)
-
+        #chiLifetime = -1*max(0,lowerBound - tau56) -1*max(0,tau56 - upperBound)
+        chiLifetime = self.cost_lifetime(tau56, self.wt_lifetime_stim)
+        
         chiPost=chiPost+chiLifetime
         #chi from total change on the membrane
         #print(f" before chi recruitment stim, M on membrane: , {solutionPre[2][-1]}, and post {solutionPost[2][-1]}")
@@ -868,12 +907,15 @@ class Munc13:
         simRatio=avgD/avgDpost
         DWTratio=1.12 #the actual WT ratio is D/Dpost = 1.17
         #use the Relu term to penalize speed-ups, not larger slowdowns.
+        chiDratio = 0.0
         chiDratio = -1*max(0,DWTratio-simRatio)
-        chiTotal=np.array(1)
+        #print("D ratio WT, CHI: ", simRatio, chiDratio)
+        
         #assign a weight to the Chi for diffusion slow-down upon stimulation
         weightD = 10.0
-
-        chiTotal = chiPre + chiPost+ chiRecruitStim[0] + chiDratio*weightD
+        chiTotal = 0.0 #initialize it to a float value.
+        #print("datatypes: ", type(chiTotal), type(chiPre), type(chiPost), type(chiRecruitStim), type(chiDratio))
+        chiTotal = chiPre + chiPost+ chiRecruitStim + chiDratio*weightD
 
         
         
@@ -893,7 +935,8 @@ class Munc13:
         #print(f"Cluster lifetimes: tau46 {tau46}, tau56 {tau56}")
         #we want tau56 to be at least 10 seconds and less than 50
     
-        chiLifetime = -1*max(0,lowerBound - tau56) -1*max(0,tau56 - upperBound)
+        #chiLifetime = -1*max(0,lowerBound - tau56) -1*max(0,tau56 - upperBound)
+        chiLifetime = self.cost_lifetime(tau56, self.c2a_lifetime)
         chiPre=chiPre+chiLifetime
        
         # Chi from post
@@ -904,7 +947,9 @@ class Munc13:
         #print(f"Cluster lifetimes: tau46 {tau46}, tau56 {tau56}")
         #we want tau56 to be at least 10 seconds and less than 50
     
-        chiLifetime = -1*max(0,lowerBound - tau56) -1*max(0,tau56 - upperBound)
+        #chiLifetime = -1*max(0,lowerBound - tau56) -1*max(0,tau56 - upperBound)
+        chiLifetime = self.cost_lifetime(tau56, self.c2a_lifetime_stim)
+        
         chiPost=chiPost+chiLifetime
         #chi from total change on the membrane
         chiRecruitStim= self.costChi_recruitmentStim(mutantC2A_pre,mutantC2A_post, self.recruitmentStimC2A)
@@ -915,20 +960,23 @@ class Munc13:
         #add a term to ensure that the mutant has a lower density of clusters than the dimer.
         #say it should be at least 1.5 times lower. 
         factorLower = 1.5
+        chiMutant=0.0
         chiMutant = -1*max(0, factorLower*endDensityMutantPre-endDensityPre)
-        weightMutant = 10 
+        weightMutant = 10.0 
 
         mutD = self.calculate_population_average_diffusion(mutantC2A_pre)
         mutDpost = self.calculate_population_average_diffusion(mutantC2A_post)
+        
         mutRatio=mutD/avgD #ratio of mutant to WT
         Dratio=1.5 #the actual mut/WT ratio is D/DWt = 1.8
         #use the Relu term to penalize speed-ups, not larger slowdowns.
         chiDratio = -1*max(0,Dratio-mutRatio)
         
         
-        chiTotal = chiTotal+ chiPre + chiPost+ chiMutant*weightMutant + chiRecruitStim[0] + chiDratio*weightD
+        chiTotal = chiTotal+ chiPre + chiPost+ chiMutant*weightMutant + chiRecruitStim + chiDratio*weightD
 
-        
+        #print("datatypes: ", type(chiTotal), type(chiPre), type(chiPost), type(chiRecruitStim), type(chiDratio))
+
     
         if(chiTotal > 0):
             print(f"Positive chi found! {chiTotal}")
@@ -938,7 +986,7 @@ class Munc13:
             print("-------ERROR------")
             return [self.threshold*10]
         
-        print(f"Total chi: {chiTotal}")
+        #print(f"Total chi: {chiTotal}")
 
         return chiTotal
 
@@ -1263,7 +1311,7 @@ class Munc13:
         #fig.savefig("../fig/fig_total_recruitment_wt.png", dpi=dpi) 
         plt.show()
 
-    def plot_diffusion_vs_exp(self, D_metrics, whichRow):
+    def plot_diffusion_vs_exp(self, D_metrics, whichRow, fileStr):
         #make a plot that shows actual and predicted diffusion constants for
         fig, ax = plt.subplots(figsize=(3, 2))
         D=D_metrics['D'].iloc[whichRow]
@@ -1272,8 +1320,8 @@ class Munc13:
         DC2Apost=D_metrics['C2ADpost'].iloc[whichRow]
         ax.plot(self.D_exp_pre,D, markersize=4, marker='o', color='black', alpha=0.95, zorder=3)
         ax.plot(self.D_exp_post,Dpost, markersize=4, marker='o', color='red', alpha=0.95, zorder=3)
-        ax.plot(self.D_exp_DC2A_pre,DC2A, markersize=6, marker='+', color='black', alpha=0.95, zorder=3)
-        ax.plot(self.D_exp_DC2A_post,DC2Apost, markersize=6, marker='+', color='red', alpha=0.95, zorder=3)
+        ax.plot(self.D_exp_DC2A_pre,DC2A, markersize=4, marker='s', color='black', alpha=0.95, zorder=3)
+        ax.plot(self.D_exp_DC2A_post,DC2Apost, markersize=4, marker='s', color='red', alpha=0.95, zorder=3)
         ax.plot(np.arange(0, 10)*0.1,np.arange(0, 10)*0.1, linewidth=1, ls='-', color='black', alpha=0.95, zorder=3)
 
         ax.set_xlim(left=0, right=0.1)
@@ -1285,13 +1333,13 @@ class Munc13:
         # Get rid of bound box on the top.
         ax.spines['top'].set_visible(False)
         plt.tight_layout()
-        plt.savefig(f"/Users/margaret/Dropbox/r2025/Munc13/IMAGES/Diffusion_actual_vs_predicted_{whichRow}.png",dpi=300)
+        plt.savefig(f"/Users/margaret/Dropbox/r2025/Munc13/IMAGES/Diffusion_actual_vs_predicted_{fileStr}_{whichRow}.png",dpi=300)
         plt.show()
 
     def plot_time_resolved_density(self, sol, solPost, fileStr):
         #create quality small figure of time-dependence of clusters
         fig, ax = plt.subplots(figsize=(2.5, 2))  # 2 inches wide, 2 inches tall
-
+        fontsize = 10
         copies = sol * self.cellVolume * 602
         clusters = copies[22] + copies[18] + copies[16]
         small_clusters = copies[21] + copies[20] + copies[19] + copies[17] + copies[15] + copies[14] + copies[13]
@@ -1306,14 +1354,14 @@ class Munc13:
         # concatenate pre/post series
         combine = np.concatenate((clusters, clustersP))
         small_combine = np.concatenate((small_clusters, small_clustersP))
-
-        ax.plot(fullTime, combine / self.cellArea, linewidth=2,linestyle="-", label="clusters", color='blue', alpha=0.95, zorder=3)
-        ax.plot(fullTime, small_combine / self.cellArea, linewidth=2, linestyle="--", label="small clusters", color='blue', alpha=0.95, zorder=3)
+        c1 = '#0F52BA'
+        ax.plot(fullTime, combine / self.cellArea, linewidth=2,linestyle="-", label="clusters", color=c1, alpha=0.95, zorder=3)
+        ax.plot(fullTime, small_combine / self.cellArea, linewidth=2, linestyle="--", label="small clusters", color=c1, alpha=0.95, zorder=3)
         ax.set_xlim(left=0)
-        ax.set_ylim(bottom=0, top=0.025)
+        ax.set_ylim(bottom=0, top=0.08)
         ax.set_xlabel("time (s)", fontsize=9)
-        ax.set_ylabel("Cluster Density (/$\\mu$m$^2$)", color='blue',fontsize=9)
-        ax.tick_params(axis='both',labelcolor='blue', labelsize=9)
+        ax.set_ylabel("Cluster Density (/$\\mu$m$^2$)", color=c1,fontsize=fontsize)
+        ax.tick_params(axis='both',labelcolor=c1, labelsize=fontsize)
         ax.set_xticks([0, 1000,2000])
         # Get rid of bound box on the top.
         ax.spines['top'].set_visible(False)
@@ -1328,10 +1376,10 @@ class Munc13:
      
         combineMem = np.concatenate((memCopies, memCopiesPost))
         upperLim=combineMem[-1]/self.cellArea
-        ax2.plot(fullTime, combineMem/self.cellArea, color='cyan', linewidth=2)
-        ax2.set_ylabel("Munc13_mem (/$\\mu$m$^2$)", fontsize=9, color='cyan')
-        ax2.tick_params( labelcolor='cyan', labelsize=8)
-        ax2.set_ylim(bottom=0, top=4)
+        ax2.plot(fullTime, combineMem/self.cellArea, color='purple', linewidth=2)
+        ax2.set_ylabel("Munc13_mem (/$\\mu$m$^2$)", fontsize=fontsize, color='purple')
+        ax2.tick_params( labelcolor='purple', labelsize=fontsize)
+        ax2.set_ylim(bottom=0, top=5)
 
         plt.tight_layout()
         plt.savefig(f"/Users/margaret/Dropbox/r2025/Munc13/IMAGES/clusterDensity_vs_time_{fileStr}.png",dpi=300)
@@ -1484,7 +1532,9 @@ class Munc13:
         #fig.savefig("../fig/fig_total_recruitment_wt.png", dpi=dpi) 
         plt.show(block=True)
 
-    def plot_density_vs_exp(self, sol, solPost, fileStr, whichExp='WT', figsize=(2.5, 2), fontsize=9, dpi=300):
+    #CREATE a BAR PLOT of the CLUSTER DENSITY, MODEL vs Exp, Before and After STIM
+
+    def plot_density_vs_exp(self, sol, solPost, fileStr, whichExp='WT', figsize=(2.5, 2), fontsize=10, dpi=300):
         sns.set_style("ticks")
         sns.set_context("paper", rc={
             "font.size": fontsize,
@@ -1533,6 +1583,9 @@ class Munc13:
         if whichExp=='C2A':
             densPre=self.density_c2a_pre
             densPost=self.density_c2a_post
+        elif whichExp =='C2C':
+            densPre=self.density_c2c_pre
+            densPost=self.density_c2c_post
         else:
             densPre=self.density_exp_pre
             densPost=self.density_exp_post
@@ -1552,8 +1605,8 @@ class Munc13:
         ax.set_ylabel(r"$\mathrm{Cluster\ Density}\ (/\mu\mathrm{m}^2)$", fontsize=fontsize)
         ax.set_xticks(centers)
         ax.set_xticklabels([], fontsize=fontsize)
-        ax.tick_params(axis='y', labelsize=fontsize * 0.8)
-        ax.set_ylim(bottom=0, top=0.042)
+        ax.tick_params(axis='y', labelsize=fontsize)
+        ax.set_ylim(bottom=0, top=0.098)
 
         # Adjust layout to fit
         plt.tight_layout(rect=[0, 0, 1, 0.95])
@@ -1568,7 +1621,7 @@ class Munc13:
         fig.savefig(f"/Users/margaret/Dropbox/r2025/Munc13/IMAGES/barplot_clusterDens_{fileStr}.png", dpi=dpi) 
         plt.show()
 
-    def plot_lifetime_vs_exp(self, candidate, sol, solPost, fileStr, figsize=(2.5, 2), fontsize=9, dpi=300):
+    def plot_lifetime_vs_exp(self, candidate, sol, solPost, fileStr, figsize=(2.5, 2), fontsize=10, dpi=300):
         
         sns.set_style("ticks")
         sns.set_context("paper", rc={
@@ -1632,7 +1685,7 @@ class Munc13:
         ax.set_ylabel(r"$\mathrm{Cluster\ lifetime}\ (s)$", fontsize=fontsize)
         ax.set_xticks(centers)
         ax.set_xticklabels([], fontsize=fontsize)
-        ax.tick_params(axis='y', labelsize=fontsize * 0.8)
+        ax.tick_params(axis='y', labelsize=fontsize)
         ax.set_ylim(bottom=0, top=20)
 
         # Adjust layout to fit
@@ -1651,7 +1704,7 @@ class Munc13:
     def plot_track_increase_vs_exp(self, sol, solPost, mut, mutPost, fileStr, figsize=(2.5, 2)):
         sns.set_style("ticks")
         dpi=300
-        fontsize=9
+        fontsize=10
 
         sns.set_context("paper", rc={
             "font.size": fontsize,
@@ -1704,9 +1757,9 @@ class Munc13:
        
 
         ax.bar(x_exp_no, self.recruitmentStim,  width=bar_width,  capsize=4,
-            color='red',   edgecolor='black', label='Exp (NO STIM)')
+            color='orange',   edgecolor='black', label='Exp (NO STIM)')
         ax.bar(x_exp_stim,  simIncreaseWT,  width=bar_width,
-            facecolor='white', edgecolor='red',   hatch=hatch_model, label='Model (NO STIM)')
+            facecolor='white', edgecolor='orange',   hatch=hatch_model, label='Model (NO STIM)')
      
         #Now C2A
         ax.bar(x_mod_no,   self.recruitmentStimC2A,  width=bar_width,capsize=4,
@@ -1715,7 +1768,7 @@ class Munc13:
             facecolor='white', edgecolor='orange', hatch=hatch_model, label='Model (STIM)')
 
         # Axes/labels
-        ax.set_ylabel(r"$\mathrm{tracks\ Stim / tracks}$", fontsize=fontsize)
+        ax.set_ylabel(r"$\mathrm{tracks\ STIM / tracks}$", fontsize=fontsize)
         ax.set_xticks(centers)
         ax.set_xticklabels([], fontsize=fontsize)
         ax.tick_params(axis='y', labelsize=fontsize * 0.8)
@@ -1734,7 +1787,7 @@ class Munc13:
         fig.savefig(f"/Users/margaret/Dropbox/r2025/Munc13/IMAGES/barplot_trackIncrease_{fileStr}.png", dpi=dpi) 
         plt.show()
 
-    def plot_diffusion_as_barplot(self, D1, D1post, D2, D2post, fileStr):
+    def plot_diffusion_as_barplot(self, D1, D1post, D2, D2post, fileStr, vsExp = False):
         #make a bar plot of diffusion following lower
         fig, ax = plt.subplots(figsize=(3,2))
         bar_width=0.18
@@ -1744,15 +1797,27 @@ class Munc13:
         c1=0.9
         hatch_model = '///'
         centers=[c1, c1+bar_width, c1+2*bar_width+gap, c1+3*bar_width+gap]
-        ax.bar(centers[0],  D1,  width=bar_width,  capsize=4,
+        if vsExp == True:
+            ax.bar(centers[0],  D1,  width=bar_width,  capsize=4,
+                    facecolor='black',   edgecolor='black')
+            ax.bar(centers[1], D1post, width=bar_width, capsize=4,
+                    facecolor='red', edgecolor='black')
+            ax.bar(centers[2],  D2,  width=bar_width,  capsize=4,
                     facecolor='white',   edgecolor='black', hatch=hatch_model)
-        ax.bar(centers[1], D1post, width=bar_width, capsize=4,
+            ax.bar(centers[3], D2post, width=bar_width, capsize=4,
                     facecolor='white', edgecolor='red', hatch=hatch_model)
-        ax.bar(centers[2],  D2,  width=bar_width,  capsize=4,
+            outFileName = f"/Users/margaret/Dropbox/r2025/Munc13/IMAGES/diffusion_EXP_vs_{fileStr}.png"
+        else:
+            ax.bar(centers[0],  D1,  width=bar_width,  capsize=4,
                     facecolor='white',   edgecolor='black', hatch=hatch_model)
-        ax.bar(centers[3], D2post, width=bar_width, capsize=4,
+            ax.bar(centers[1], D1post, width=bar_width, capsize=4,
                     facecolor='white', edgecolor='red', hatch=hatch_model)
-       
+            ax.bar(centers[2],  D2,  width=bar_width,  capsize=4,
+                    facecolor='white',   edgecolor='black', hatch=hatch_model)
+            ax.bar(centers[3], D2post, width=bar_width, capsize=4,
+                    facecolor='white', edgecolor='red', hatch=hatch_model)
+            outFileName = f"/Users/margaret/Dropbox/r2025/Munc13/IMAGES/diffusion_WT_vs_{fileStr}.png"
+        
         # Axes/labels
         ax.set_ylabel(r"$\mathrm{Diffusion\ Constant}\ (/\mu\mathrm{m}^2/s)$", fontsize=fontsize)
         ax.set_xticks(centers)
@@ -1767,7 +1832,7 @@ class Munc13:
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         dpi=300
-        fig.savefig(f"/Users/margaret/Dropbox/r2025/Munc13/IMAGES/diffusion_WT_vs_{fileStr}.png", dpi=dpi) 
+        fig.savefig(f"{outFileName}", dpi=dpi) 
             
     def calculate_population_average_diffusion(self, sol):     
         """MEJ
@@ -1812,9 +1877,9 @@ class Munc13:
         DtS2Q2 = 1.0/(1.0/DtSQ + 1.0/DtSQ)
        
 
-        print(f"DtM, {DtM}. DtX {DtX}. DtD {DtD}")
-        print(f"DtM6X, {DtM6X}. DtD3X {DtD3X}. DtMX {DtMX}. DtDX {DtDX}")
-        print(f"memMunc {memMunc}. M {copies[2]}. D {copies[3]}. ")
+        #print(f"DtM, {DtM}. DtX {DtX}. DtD {DtD}")
+        #print(f"DtM6X, {DtM6X}. DtD3X {DtD3X}. DtMX {DtMX}. DtDX {DtDX}")
+        #print(f"memMunc {memMunc}. M {copies[2]}. D {copies[3]}. ")
 
         averageD = (copies[2]*self.DtM + 2*copies[3]*self.DtD +copies[6]*DtMX+\
                     DtSX*copies[7]+2*DtMMX*copies[8]+\
@@ -2266,7 +2331,7 @@ class Munc13:
         eDF.columns = eDF.columns.str.strip()
 
         # Parameter columns = everything except bookkeeping
-        param_cols = [c for c in eDF.columns if c not in ("Rank", "Fitness")]
+        param_cols = [c for c in eDF.columns if c not in ("Rank", "Fitness","kfq","krq","Q0")]
         if not param_cols:
             raise ValueError("No parameter columns found in optimizedParms.txt")
 
@@ -2283,7 +2348,7 @@ class Munc13:
         # -------------------- labels --------------------------------------------
         parms_name_map = {
             'kfsr': r'$kf_{SR}\; (\mu\mathrm{M}^{-1}\,\mathrm{s}^{-1})$',
-            'krsr': r'$kr_{SR,\mathrm{NOSTIM}}\; (\mathrm{s}^{-1})$',
+            'krsr': r'$kr_{SR}\; (\mathrm{s}^{-1})$',
             
             'kfmm': r'$kf_{MM}\; (\mu\mathrm{M}^{-1}\,\mathrm{s}^{-1})$',
             'krmm': r'$kr_{MM}\; (\mathrm{s}^{-1})$',
@@ -2295,9 +2360,10 @@ class Munc13:
             'kfq': r'$kf_{Q}\; (\mu\mathrm{M}^{-1}\,\mathrm{s}^{-1})$',
             'krq': r'$kr_{Q}\; (\mathrm{s}^{-1})$',
             'kfdd': r'$kf_{DD}\; (\mathrm{s}^{-1})$',
-            'eLoop': r'$exp^{loop}\; $',
-            'eDF': r'$exp^{DF}\; $',
-            'Sd': r'$Sd\; $',
+            'eLoop': r'$e^{\Delta G_{Loop}}\; $',
+            'eDF': r'$e^{\Delta F}\; $',
+            'Sd': r'$f_{dimer}\; $',
+            'stimUpSR': r'$\alpha\; $',
             'S0': r'$S_{0}\; (\mu\mathrm{M})$',
             'R0': r'$R_{0}\; (\mathrm{copies}/\mu\mathrm{m}^{2})$',
             'X0': r'$X_{0}\; (\mathrm{copies}/\mu\mathrm{m}^{2})$',
@@ -2383,19 +2449,19 @@ class Munc13:
         ax.set_xticks(x)
         ax.set_xticklabels([parms_name_map.get(p, p) for p in param_cols],
                         rotation=35, ha="right")
-        ax.tick_params(axis="x", labelsize=fontsize-2)
-        ax.tick_params(axis="y", labelsize=fontsize-2)
-        ax.set_ylabel("Parameter-Dependent Units", fontsize=fontsize)
+        ax.tick_params(axis="x", labelsize=fontsize)
+        ax.tick_params(axis="y", labelsize=fontsize*1.4)
+        ax.set_ylabel("Parameter-Dependent Units", fontsize=fontsize*1.4)
 
         # legend
         legend_elems = [
             patches.Patch(facecolor="lightgray", edgecolor="none", label="Allowed range"),
             patches.Patch(facecolor="#7ec8ff", edgecolor="none",
-                        label=f"Top {percent}% by Rank"),
+                        label=f"Top {percent}% by Fitness"),
             Line2D([0], [0], color="#1f4ea8", lw=2.2, label="Best value"),
         ]
         ax.legend(handles=legend_elems, loc="upper right", frameon=False,
-                fontsize=fontsize-2)
+                fontsize=fontsize)
 
         fig.tight_layout()
         fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
@@ -2474,11 +2540,11 @@ class Munc13:
 
         # -------------------- labels --------------------------------------------
         parms_name_map = {
-            'kDsr': r'$K_{D,SR}\; (\mu\mathrm{M})$',
-            'kDmm': r'$K_{D,MM}\; (\mu\mathrm{M})$',
-            'kDmx': r'$K_{D,MX}\; (\mu\mathrm{M})$',
-            'kDc': r'$K_{D,C}\; (\mu\mathrm{M})$',
-            'kDq': r'$K_{D,Q}\; (\mu\mathrm{M})$', 
+            'kDsr': r'$K_{D,SR}\; $',
+            'kDmm': r'$K_{D,MM}\; $',
+            'kDmx': r'$K_{D,MX}\; $',
+            'kDc': r'$K_{D,C}\; $',
+            'kDq': r'$K_{D,Q}\; $', 
 
         }
 
@@ -2556,19 +2622,191 @@ class Munc13:
         ax.set_xticks(x)
         ax.set_xticklabels([parms_name_map.get(p, p) for p in kdnames],
                         rotation=35, ha="right")
-        ax.tick_params(axis="x", labelsize=fontsize-2)
-        ax.tick_params(axis="y", labelsize=fontsize-2)
-        ax.set_ylabel("Parameter-Dependent Units", fontsize=fontsize)
+        ax.tick_params(axis="x", labelsize=fontsize)
+        ax.tick_params(axis="y", labelsize=fontsize)
+        ax.set_ylabel(r'$K_{D} (\mu M)$', fontsize=fontsize*1.4)
 
         # legend
         legend_elems = [
             patches.Patch(facecolor="lightgray", edgecolor="none", label="Allowed range"),
             patches.Patch(facecolor="#7ec8ff", edgecolor="none",
-                        label=f"Top {percent}% by Rank"),
+                        label=f"Top {percent}% by Fitness"),
             Line2D([0], [0], color="#1f4ea8", lw=2.2, label="Best value"),
         ]
         ax.legend(handles=legend_elems, loc="upper right", frameon=False,
-                fontsize=fontsize-2)
+                fontsize=fontsize)
+
+        fig.tight_layout()
+        fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
+        print(f"Saved summary to: {save_path}")
+
+    def plot_parameter_KD_summary_noQ(
+        self,
+        best=100,
+        select=100,
+        parameter_ranges=None,
+        percent=10,                    # use top `percent`% of solutions by Rank
+        figsize=(11, 7),
+        fontsize=16,
+        dpi=600,
+        bar_width=0.7,
+        save_path="../fig/params-summary.png",
+        inputFile = "../data/dummy.txt",
+    ):
+        """
+        Summary plot of parameter ranges:
+        - Grey bar: allowed range (from `parameter_ranges` or data span fallback).
+        - Light blue bar: range across the top `percent`% solutions by Rank.
+        - Dark blue line: best (lowest-Rank) value.
+
+        `percent=10` on a file with 1000 rows uses the best 100 rows by Rank.
+        """
+        from matplotlib.ticker import LogLocator, LogFormatterMathtext, NullFormatter
+        import matplotlib.patches as patches
+        from matplotlib.lines import Line2D
+
+        # ------------------------------ style -----------------------------------
+        sns.set_style("ticks")
+        sns.set_context("paper", rc={
+            "font.size": fontsize,
+            "axes.titlesize": fontsize,
+            "axes.labelsize": fontsize,
+            "xtick.labelsize": fontsize,
+            "ytick.labelsize": fontsize,
+            "legend.fontsize": fontsize,
+            "font.family": "serif"
+        })
+
+        
+
+        # --------------------- load solutions -----------------------------------
+        eDF = pd.read_csv(inputFile, sep=",", engine="python")
+        eDF.columns = eDF.columns.str.strip()
+
+        
+        # Best-by-rank subset size
+        n_total = len(eDF)
+        n_best = max(1, int(np.floor(n_total * (percent / 100.0))))
+        # Best subset by fitness (higher fitness=better)
+        best_eDF = eDF.nlargest(n_best, "Fitness")
+        best_rowP = eDF.nlargest(1, "Fitness").iloc[0]
+
+        print(f"Total solutions loaded: {n_total}")
+        print(f"Using top {percent}% by Fitness -> {n_best} solutions.")
+
+        #-----------------#
+        #create a new datastructure from best_eDF that evaluates the KD values for each row
+        kdnames = ['kDsr','kDmm','kDmx','kDc']
+        kdDF=pd.DataFrame(columns = kdnames)
+        #calculate the KD values from kr/kf
+        for idx, row in best_eDF.iterrows():
+            # Access row data by column name, e.g. row['column_name']
+            #print(idx, row)
+            newRow=np.array(5) 
+            newRow=[row['krsr']/row['kfsr'], row['krmm']/row['kfmm'], row['krmx']/row['kfmx'], row['krc']/row['kfc']]        
+            kdDF.loc[len(kdDF)]=newRow
+
+        best_row=pd.DataFrame(columns = kdnames)
+        newRow=[best_rowP['krsr']/best_rowP['kfsr'], best_rowP['krmm']/best_rowP['kfmm'], best_rowP['krmx']/best_rowP['kfmx'], best_rowP['krc']/best_rowP['kfc']]        
+        best_row.loc[len(best_row)]=newRow 
+
+        # -------------------- labels --------------------------------------------
+        parms_name_map = {
+            'kDsr': r'$K_{D,SR}\; $',
+            'kDmm': r'$K_{D,MM}\; $',
+            'kDmx': r'$K_{D,MX}\; $',
+            'kDc': r'$K_{D,C}\; $',
+            
+
+        }
+
+        tiny = np.finfo(float).tiny
+
+        # -------------------- allowed ranges (grey) ------------------------------
+        pr = {}
+        for p in kdnames:
+            lo=0.0001
+            hi=100000
+            pr[p] = {"min": lo, "max": hi}
+
+        # ------------- range across the best `percent`% (light blue) ------------
+        subset_ranges = {}
+        for p in kdnames:
+            col = kdDF[p].to_numpy(float)
+            col = col[np.isfinite(col) & (col > 0)]
+            if col.size == 0:
+                v = max(float(best_row[p]), tiny)
+                wlo, whi = v * 0.95, v * 1.05
+            else:
+                wlo, whi = col.min(), col.max()
+            # clamp to allowed, pad if collapsed
+            wlo = max(wlo, pr[p]["min"])
+            whi = min(whi, pr[p]["max"])
+            if whi <= wlo:
+                wlo *= 0.95
+                whi *= 1.05
+            subset_ranges[p] = (wlo, whi)
+
+        # global y span (from allowed)
+        y_min = min(pr[p]["min"] for p in kdnames)
+        y_max = max(pr[p]["max"] for p in kdnames)
+
+        # ----------------------------- plot -------------------------------------
+        fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+        x = np.arange(len(kdnames), dtype=float)
+        half = bar_width / 2.0
+
+        for i, p in enumerate(kdnames):
+            alo, ahi = pr[p]["min"], pr[p]["max"]
+            wlo, whi = subset_ranges[p]
+            print("p: ", p)
+            print("best_row", best_row)
+
+            best_val = max(float(best_row[p]), tiny)
+
+            # grey allowed range
+            ax.add_patch(
+                patches.Rectangle((i - half, alo), bar_width, ahi - alo,
+                                facecolor="lightgray", edgecolor="none", alpha=1.0)
+            )
+            # light-blue: best `percent`% by Rank
+            ax.add_patch(
+                patches.Rectangle((i - half, wlo), bar_width, whi - wlo,
+                                facecolor="#7ec8ff", edgecolor="none", alpha=0.85)
+            )
+            # dark-blue horizontal line for the single best (lowest Rank)
+            ax.hlines(best_val, i - bar_width * 0.35, i + bar_width * 0.35,
+                    colors="#1f4ea8", linewidth=2.2)
+
+        # y-axis formatting (log)
+        ax.set_yscale("log")
+        y_min = 1e-3
+        ax.set_ylim(y_min, y_max)
+        ax.yaxis.set_major_locator(LogLocator(base=10.0, numticks=6))
+        ax.yaxis.set_major_formatter(LogFormatterMathtext())
+        ax.yaxis.set_minor_locator(LogLocator(base=10.0, subs=np.arange(2, 10)*0.1,
+                                            numticks=12))
+        ax.yaxis.set_minor_formatter(NullFormatter())
+        ax.grid(True, which="both", axis="y", alpha=0.15)
+
+        # x labels
+        ax.set_xlim(-0.5, len(kdnames) - 0.5)
+        ax.set_xticks(x)
+        ax.set_xticklabels([parms_name_map.get(p, p) for p in kdnames],
+                        rotation=35, ha="right")
+        ax.tick_params(axis="x", labelsize=fontsize)
+        ax.tick_params(axis="y", labelsize=fontsize)
+        ax.set_ylabel(r'$K_{D} (\mu M)$', fontsize=fontsize*1.4)
+
+        # legend
+        legend_elems = [
+            patches.Patch(facecolor="lightgray", edgecolor="none", label="Allowed range"),
+            patches.Patch(facecolor="#7ec8ff", edgecolor="none",
+                        label=f"Top {percent}% by Fitness"),
+            Line2D([0], [0], color="#1f4ea8", lw=2.2, label="Best value"),
+        ]
+        ax.legend(handles=legend_elems, loc="upper right", frameon=False,
+                fontsize=fontsize)
 
         fig.tight_layout()
         fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
@@ -2601,7 +2839,7 @@ class Solver:
         self.model = model
         self.populationSize = populationSize
         self.NGEN = NGEN
-        self.indpb = 0.85  # Probability of mutation per gene
+        self.indpb = 0.75  # 1-indpb = probability of mutation per gene
         self.outfileName = outfileName
         # Create DEAP classes
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
@@ -2615,7 +2853,10 @@ class Solver:
         # Genetic operators
         self.toolbox.register("mate", tools.cxTwoPoint)
         self.toolbox.register("mutate", self.mutateCandidate, indpb=self.indpb, mult=0.5)
-        self.toolbox.register("select", tools.selRoulette)
+        #self.toolbox.register("select", tools.selRoulette)
+        self.toolbox.register("select", tools.selTournament)
+        #deap.tools.selTournament(individuals, k, tournsize, fit_attr='fitness')[source]
+        #Select the best individual among tournsize randomly chosen individuals, k times. The list returned contains references to the input individuals.
 
         # Register the main evaluation function with DEAP
         # (We only pick one from model.modes if you have multiple)
@@ -2672,16 +2913,20 @@ class Solver:
         all_viable_points = []
         all_viable_fitness = []
 
+        print("BEGIN main GA loop. ")
         # GA main loop
         for gen in range(self.NGEN):
             # Variation (recombination+mutation)
             offspring = algorithms.varAnd(population, self.toolbox, cxpb=0.8, mutpb=0.2) #0.8, 0.02
             # Evaluate in parallel
             fits = list(self.toolbox.map(self.toolbox.evaluate, offspring))
-            print("fitness: ",fits[0])
+            print("size of fits, and type[0]: ", len(fits), type(fits[0]))
+            print("fitness[0]:  ",fits[0])
             print("candidate: ",offspring[0])
+            #sys.stdout.flush()
+
             for fit_val, ind in zip(fits, offspring):
-                cost, = fit_val
+                cost = fit_val
                 ind.fitness.values = (cost,)
 
                 # Check viability
@@ -2695,9 +2940,10 @@ class Solver:
             # Selection step
             population = self.toolbox.select(offspring, k=len(population))
 
-            if gen % 2 == 0:
-                print(f"=== Generation {gen} ===")
-                print(f"Number of viable points so far: {len(all_viable_points)}")
+            #if gen % 2 == 0:
+            print(f"=== Generation {gen} ===")
+            print(f"Number of viable points so far: {len(all_viable_points)}")
+            #sys.stdout.flush() #print this out as soon as it is written
 
         return (all_viable_points, all_viable_fitness)
 
@@ -2816,7 +3062,7 @@ if __name__ == "__main__":
         #"D1":        {"min": 0.05,   "max": 5}, # D1
         #"D1_over_D2":        {"min": 1.5,   "max": 5}, # D2
         "X0":        {"min": 0.01,   "max": 100}, # X0  (/um^2)
-        "Q0":       {"min": 0.01,   "max":  100}, # Q0  (/um^2)
+        "Q0":       {"min": 1e-50,   "max":  1e-49}, # Q0  (/um^2)
        
          
     }
@@ -2829,43 +3075,47 @@ if __name__ == "__main__":
     ])
     print("number of parameters to optimize: ", params_to_optimizeCa.size)
     # GA settings
-    popSize = 20000
-    nGen = 5
+    popSize = 30000
+    nGen = 6
 
     # Instantiate the model and solver, including max time limit.
     maxTime = 1000.0
     model = Munc13(parameter_ranges, params_to_optimizeCa, t_max=maxTime)
-    #the solver can be passed a specific filename for the solutions.
-    random_number = np.random.randint(1, 10000)
-    filename = f"../data/testParms_Dterm_Lifetimes_{random_number}.txt"
-    print("Output filename: ", filename)
-    solver = Solver(model, populationSize=popSize, NGEN=nGen, outfileName=filename)
+    
+    nRepeats=5
+    #repeat the solver multiple times.
+    for rep in range(nRepeats):
+        #the solver can be passed a specific filename for the solutions.
+        random_number = np.random.randint(1, 10000)
+        filename = f"../data/testParms_tourn_ChiLifetimes_{random_number}.txt"
+        print("Output filename: ", filename)
+        solver = Solver(model, populationSize=popSize, NGEN=nGen, outfileName=filename)
 
-    # For testing: simulate and plot one candidate solution
-    testOne=False
-    #Set testOne to false to run the optimizer.
-    if(testOne):
-        print('Test one candidate solution...')
-        test_candidate=[5.743226759831292, 0.0018309892557324039, 0.03285912981166581, 0.1983236052173084, 0.018049508326647788, 0.04842961665796711, 0.11611942775698278, 0.019124251367490287, 2.049294616105438, 0.22599680930156066, 9.33694669734479, 1, 0.01, 12.86442741404803, 1.4002213127797607, 1.4872831077940427, 27.8125416304795]
-        model.test_one_candidate(test_candidate)
-        viableFitness = []
-    else:
-        # Run the GA
-        print("Run the GA ", filename)
-        viablePoints, viableFitness = solver.run()
+        # For testing: simulate and plot one candidate solution
+        testOne=False
+        #Set testOne to false to run the optimizer.
+        if(testOne):
+            print('Test one candidate solution...')
+            test_candidate=[5.743226759831292, 0.0018309892557324039, 0.03285912981166581, 0.1983236052173084, 0.018049508326647788, 0.04842961665796711, 0.11611942775698278, 0.019124251367490287, 2.049294616105438, 0.22599680930156066, 9.33694669734479, 1, 0.01, 12.86442741404803, 1.4002213127797607, 1.4872831077940427, 27.8125416304795]
+            model.test_one_candidate(test_candidate)
+            viableFitness = []
+        else:
+            # Run the GA
+            print("Run the GA ", filename)
+            viablePoints, viableFitness = solver.run()
 
-    #look at one solution
-    #    y1= model.simulate_pre(viablePoints[0])
-    #    model.plot_mycluster_time(y1, figsize=(8,6), dpi=300)
+        
+        print("done with repeat: ", rep)
+    
+        # Print top solution info
+        if len(viableFitness) > 0:
+            best_fit = max(viableFitness, key=lambda x: x[0])
+            print(f"Best fitness from the run: {best_fit[0]}")
+            print("Best parameters:", viablePoints[viableFitness.index(best_fit)])
+        else:
+            print("No viable solutions found.")
 
     
-    # Print top solution info
-    if len(viableFitness) > 0:
-        best_fit = max(viableFitness, key=lambda x: x[0])
-        print(f"Best fitness from the run: {best_fit[0]}")
-        print("Best parameters:", viablePoints[viableFitness.index(best_fit)])
-    else:
-        print("No viable solutions found.")
     end_time = time.time()
     elapsed_time = end_time - start_time
     elapsed_time_minutes = elapsed_time / 60
