@@ -71,19 +71,24 @@ class Munc13:
         self.density_c2a_post = 0.58*10/320
         self.recruitmentStimC2A = 256318/86340
 
+        self.density_c2b_pre = 0.58*10/320
+        self.density_c2b_post = 0.75*10/320
+        self.recruitmentStimC2B = 86268/69916
+
         self.density_c2c_pre = 1.5*10/320
         self.density_c2c_post = 3.1*10/320
-        
+        self.recruitmentStimC2C = 444684/178965
+
         self.DtM = 0.08 #um2/s
         self.DtX = 0.001 #um2/s
         self.DtD = 0.025 #um2/s twice as slow as DM.
         self.DtQ = 0.08 #um2/s
 
         #lifetimes
-        self.wt_lifetime = 10 #s
-        self.wt_lifetime_stim = 10 #s
-        self.c2a_lifetime = 10 #s
-        self.c2a_lifetime_stim = 10 #s
+        self.wt_lifetime = 8.3 #s
+        self.wt_lifetime_stim = 9 #s
+        self.c2a_lifetime = 9.2 #s
+        self.c2a_lifetime_stim = 8.6 #s
 
         # diffusion constants
         self.D_exp_pre = 0.04255
@@ -117,6 +122,12 @@ class Munc13:
         self.D_exp_DC2B_post = 0.040632
         self.D_exp_DC2B_post_sem = 0.003063
         self.D_model_DC2B_post = None
+
+        self.D_exp_DC2C_pre = 0.02687564
+        self.D_exp_DC2C_pre_sem = 0.001753859
+
+        self.D_exp_DC2C_post = 0.01606964
+        self.D_exp_DC2C_post_sem = 0.000884
 
         self.D_model_endogenous_pre = None
         self.D_model_endogenous_post = None
@@ -1358,7 +1369,7 @@ class Munc13:
         ax.plot(fullTime, combine / self.cellArea, linewidth=2,linestyle="-", label="clusters", color=c1, alpha=0.95, zorder=3)
         ax.plot(fullTime, small_combine / self.cellArea, linewidth=2, linestyle="--", label="small clusters", color=c1, alpha=0.95, zorder=3)
         ax.set_xlim(left=0)
-        ax.set_ylim(bottom=0, top=0.08)
+        ax.set_ylim(bottom=0, top=0.04)
         ax.set_xlabel("time (s)", fontsize=9)
         ax.set_ylabel("Cluster Density (/$\\mu$m$^2$)", color=c1,fontsize=fontsize)
         ax.tick_params(axis='both',labelcolor=c1, labelsize=fontsize)
@@ -1379,7 +1390,7 @@ class Munc13:
         ax2.plot(fullTime, combineMem/self.cellArea, color='purple', linewidth=2)
         ax2.set_ylabel("Munc13_mem (/$\\mu$m$^2$)", fontsize=fontsize, color='purple')
         ax2.tick_params( labelcolor='purple', labelsize=fontsize)
-        ax2.set_ylim(bottom=0, top=5)
+        ax2.set_ylim(bottom=0, top=6)
 
         plt.tight_layout()
         plt.savefig(f"/Users/margaret/Dropbox/r2025/Munc13/IMAGES/clusterDensity_vs_time_{fileStr}.png",dpi=300)
@@ -1586,6 +1597,9 @@ class Munc13:
         elif whichExp =='C2C':
             densPre=self.density_c2c_pre
             densPost=self.density_c2c_post
+        elif whichExp =='C2B':
+            densPre=self.density_c2b_pre
+            densPost=self.density_c2b_post
         else:
             densPre=self.density_exp_pre
             densPost=self.density_exp_post
@@ -1606,8 +1620,8 @@ class Munc13:
         ax.set_xticks(centers)
         ax.set_xticklabels([], fontsize=fontsize)
         ax.tick_params(axis='y', labelsize=fontsize)
-        ax.set_ylim(bottom=0, top=0.098)
-
+        #ax.set_ylim(bottom=0, top=0.098)
+        ax.set_ylim(bottom=0, top=0.042)
         # Adjust layout to fit
         plt.tight_layout(rect=[0, 0, 1, 0.95])
 
@@ -1664,11 +1678,11 @@ class Munc13:
 
         # EXP: solid fills (with error bars)
         if fileStr=='C2A':
-            lifePre=10
-            lifePost = 10
+            lifePre=self.c2a_lifetime
+            lifePost = self.c2a_lifetime_stim
         else:
-            lifePre=10
-            lifePost = 10
+            lifePre=self.wt_lifetime
+            lifePost =self.wt_lifetime_stim
 
         ax.bar(x_exp_no,  lifePre,  width=bar_width,  capsize=4,
             color=c_no,   edgecolor='black', label='Exp (NO STIM)')
@@ -1785,6 +1799,84 @@ class Munc13:
 
         
         fig.savefig(f"/Users/margaret/Dropbox/r2025/Munc13/IMAGES/barplot_trackIncrease_{fileStr}.png", dpi=dpi) 
+        plt.show()
+
+    def plot_track_increase_of_oneMutant(self, sol, solPost, mutStr, fileStr, figsize=(2.5, 2)):
+        sns.set_style("ticks")
+        dpi=300
+        fontsize=10
+
+        sns.set_context("paper", rc={
+            "font.size": fontsize,
+            "axes.titlesize": fontsize,
+            "axes.labelsize": fontsize,
+            "xtick.labelsize": fontsize,
+            "ytick.labelsize": fontsize,
+            "legend.fontsize": fontsize,
+            "font.family": "serif"
+        })
+
+        
+
+        memCopies=self.calculate_munc13_on_membrane(sol[:,-1]*self.cellVolume *602)
+        memCopiesPost=self.calculate_munc13_on_membrane(solPost[:,-1]*self.cellVolume *602)
+        
+     
+        simIncrease=memCopiesPost/memCopies
+
+       
+
+        fig, ax = plt.subplots(figsize=figsize)
+
+       
+        
+        bar_width   = 0.18
+        small_gap   = 0.10   # separation between Exp pair and Model pair
+        
+
+        x_exp_no   =  0*bar_width
+        x_exp_stim =  1*bar_width + small_gap
+        
+        # Colors and styles
+      
+        hatch_model = '///'
+
+        if(mutStr == 'WT'):
+            expIncrease = self.recruitmentStim
+        elif(mutStr == 'C2B'):
+            expIncrease = self.recruitmentStimC2B
+        elif(mutStr =='C2C'):
+            expIncrease = self.recruitmentStimC2C
+        elif(mutStr =='C2A'):
+            expIncrease = self.recruitmentStimC2A
+        else:
+            expIncrease = self.recruitmentStim
+        
+            
+        ax.bar(x_exp_no, expIncrease,  width=bar_width,  capsize=4,
+            color='orange',   edgecolor='black', label='Exp (NO STIM)')
+        ax.bar(x_exp_stim,  simIncrease,  width=bar_width,
+            facecolor='white', edgecolor='orange',   hatch=hatch_model, label='Model (NO STIM)')
+     
+        
+        # Axes/labels
+        ax.set_ylabel(r"$\mathrm{tracks\ STIM / tracks}$", fontsize=fontsize)
+        # ax.set_xticks(centers)
+        ax.set_xticklabels([], fontsize=fontsize)
+        ax.tick_params(axis='y', labelsize=fontsize * 0.8)
+        ax.set_ylim(bottom=0, top=5)
+
+        # Adjust layout to fit
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+        # Cleanup
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        #ax.legend()
+        fig.tight_layout()
+
+        
+        fig.savefig(f"/Users/margaret/Dropbox/r2025/Munc13/IMAGES/barplot_trackIncrease_suppMutants_{fileStr}.png", dpi=dpi) 
         plt.show()
 
     def plot_diffusion_as_barplot(self, D1, D1post, D2, D2post, fileStr, vsExp = False):
@@ -2854,7 +2946,7 @@ class Solver:
         self.toolbox.register("mate", tools.cxTwoPoint)
         self.toolbox.register("mutate", self.mutateCandidate, indpb=self.indpb, mult=0.5)
         #self.toolbox.register("select", tools.selRoulette)
-        self.toolbox.register("select", tools.selTournament)
+        self.toolbox.register("select", tools.selTournament, tournsize=20)
         #deap.tools.selTournament(individuals, k, tournsize, fit_attr='fitness')[source]
         #Select the best individual among tournsize randomly chosen individuals, k times. The list returned contains references to the input individuals.
 

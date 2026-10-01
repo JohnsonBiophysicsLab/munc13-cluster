@@ -3,6 +3,14 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+#ignore figure files
+*.jpg
+*.png
+*.svg
+
+#ignore text files
+*.txt
+
 # C extensions
 *.so
 
